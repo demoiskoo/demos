@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Rosetta: Late-coming Loops · v0.3</title>
+</head>
+<body>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ===== DESIGN TOKENS — every colour, size and duration lives here (light first, then dark twice) ===== */
+:root{
+  --bg:#fbfaf7; --surface:#ffffff; --surface-2:#f5f0ea; --border:#e5e0d8;
+  --text:#2b211d; --muted:#6b5e57; --subtle:#9d918a; --heading:#4e342e;
+  --badge-from:#8d6e63; --badge-to:#4e342e; --on-badge:#ffffff;
+  --pill-bg:#efebe9; --pill-ink:#4e342e;
+  --btn-bg:#4e342e; --btn-ink:#ffffff; --btn-2-bg:#f5f0ea; --btn-2-ink:#4e342e;
+  --cld-bg:#f5f0eb; --cld-ink:#2a2622; --cld-ink-soft:#6b6660;
+  --node-fill:#ffffff; --node-r:#c0392b; --node-b:#196f3d; --node-hot:#1565c0;
+  --node-central:#3d1a1a; --node-central-ink:#ffffff;
+  --edge-pos:#1a7a4a; --edge-neg:#c0392b;
+  --badge-r:#b03327; --badge-b:#1f7a4a; --badge-ink:#ffffff;
+  --cut:#c47414; --cut-soft:#fbf1e2; --cut-ink:#ffffff;
+  --good:#2e7d57; --good-soft:#e8f3ec; --bad:#b03a3a; --bad-soft:#fbeaea;
+  --up:#2e7d57; --up-soft:#e8f3ec; --down:#8d6e63; --down-soft:#f3ede8;
+  --dot:#d6ccc3; --dot-on:#4e342e;
+  --toast-bg:#2b211d; --toast-ink:#ffffff;
+  --focus:#1565c0;
+  --shadow:0 1px 2px rgba(60,40,30,.06),0 4px 14px rgba(60,40,30,.06);
+  --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-head:Georgia,'Iowan Old Style','Times New Roman',serif;
+  --gutter:16px; --maxw:540px; --tap:44px; --card-pad:14px;
+  --r-card:14px; --r-btn:10px; --r-pill:999px;
+  --t-fast:160ms; --t-slide:220ms; --t-draw:560ms; --t-hint:4000ms;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17120f; --surface:#221b17; --surface-2:#2b231e; --border:#3b312b;
+    --text:#f2ebe5; --muted:#c2b5ab; --subtle:#8e8178; --heading:#ecd9cc;
+    --pill-bg:#3a2e28; --pill-ink:#ecd9cc;
+    --btn-bg:#dcc1ae; --btn-ink:#241a15; --btn-2-bg:#2f2621; --btn-2-ink:#ecd9cc;
+    --cld-bg:#1c1613; --cld-ink:#f2ebe5; --cld-ink-soft:#c2b5ab;
+    --node-fill:#2a221d; --node-r:#f07a6c; --node-b:#5cc58f; --node-hot:#8ab4f8;
+    --node-central:#ecd9cc; --node-central-ink:#241a15;
+    --edge-pos:#5cc58f; --edge-neg:#f07a6c;
+    --badge-r:#d9574b; --badge-b:#2f9b62; --badge-ink:#ffffff;
+    --cut:#e8a04a; --cut-soft:#3a2a17; --cut-ink:#1d1410;
+    --good:#5cc58f; --good-soft:#1f3328; --bad:#f07a6c; --bad-soft:#3b2220;
+    --up:#5cc58f; --up-soft:#1f3328; --down:#c9a491; --down-soft:#2f2621;
+    --dot:#4a3d36; --dot-on:#ecd9cc;
+    --toast-bg:#f2ebe5; --toast-ink:#17120f;
+    --focus:#8ab4f8;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17120f; --surface:#221b17; --surface-2:#2b231e; --border:#3b312b;
+  --text:#f2ebe5; --muted:#c2b5ab; --subtle:#8e8178; --heading:#ecd9cc;
+  --pill-bg:#3a2e28; --pill-ink:#ecd9cc;
+  --btn-bg:#dcc1ae; --btn-ink:#241a15; --btn-2-bg:#2f2621; --btn-2-ink:#ecd9cc;
+  --cld-bg:#1c1613; --cld-ink:#f2ebe5; --cld-ink-soft:#c2b5ab;
+  --node-fill:#2a221d; --node-r:#f07a6c; --node-b:#5cc58f; --node-hot:#8ab4f8;
+  --node-central:#ecd9cc; --node-central-ink:#241a15;
+  --edge-pos:#5cc58f; --edge-neg:#f07a6c;
+  --badge-r:#d9574b; --badge-b:#2f9b62; --badge-ink:#ffffff;
+  --cut:#e8a04a; --cut-soft:#3a2a17; --cut-ink:#1d1410;
+  --good:#5cc58f; --good-soft:#1f3328; --bad:#f07a6c; --bad-soft:#3b2220;
+  --up:#5cc58f; --up-soft:#1f3328; --down:#c9a491; --down-soft:#2f2621;
+  --dot:#4a3d36; --dot-on:#ecd9cc;
+  --toast-bg:#f2ebe5; --toast-ink:#17120f;
+  --focus:#8ab4f8;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+
+/* ===== base ===== */
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.5;
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+
+/* ===== series banner ===== */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--surface);
+  border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+.topbar-in{max-width:var(--maxw);margin:0 auto;padding:10px var(--gutter);display:flex;align-items:center}
+.brand{font-weight:700;font-size:15px;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.brand-icon{width:28px;height:28px;background:linear-gradient(135deg,var(--badge-from),var(--badge-to));border-radius:7px;
+  display:flex;align-items:center;justify-content:center;color:var(--on-badge);font-size:14px;font-weight:700;flex-shrink:0}
+.brand-name{font-weight:700}
+.brand-sep{color:var(--subtle);font-weight:400}
+.brand-sub{color:var(--muted);font-weight:500;font-size:13.5px}
+.brand-version{font-size:10.5px;background:var(--pill-bg);color:var(--pill-ink);padding:2px 7px;border-radius:10px;
+  font-weight:600;margin-left:4px;letter-spacing:.3px}
+
+/* ===== layout ===== */
+.wrap{max-width:var(--maxw);margin:0 auto;padding:14px var(--gutter) 28px}
+.intro{color:var(--muted);font-size:14.5px;margin:2px 0 12px}
+.nowrap{white-space:nowrap}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--shadow);
+  padding:var(--card-pad);margin-top:14px;min-width:0;scroll-margin-top:calc(env(safe-area-inset-top,0px) + 64px)}
+h2{font-family:var(--font-head);color:var(--heading);font-size:19px;line-height:1.3;font-weight:700}
+.lead{color:var(--muted);font-size:14px;margin-top:4px}
+
+/* ===== tabs (one per loop) ===== */
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:12px;padding:4px}
+.tab{min-height:var(--tap);border:0;background:transparent;border-radius:9px;padding:6px 4px;font-size:13.5px;
+  font-weight:600;color:var(--muted);line-height:1.2;transition:background var(--t-fast),color var(--t-fast)}
+.tab[aria-selected="true"]{background:var(--btn-bg);color:var(--btn-ink)}
+
+/* ===== carousels (loops, quick check) — one shape, native scroll-snap ===== */
+.track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}
+.track::-webkit-scrollbar{display:none}
+.track > *{flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always;min-width:0}
+.dots{display:flex;justify-content:center;align-items:center;gap:6px}
+.dots i{display:block;width:7px;height:7px;border-radius:4px;background:var(--dot);transition:width var(--t-fast),background var(--t-fast)}
+.dots i.on{width:18px;background:var(--dot-on)}
+.dots button{width:var(--tap);height:var(--tap);border:0;background:transparent;display:flex;align-items:center;justify-content:center}
+
+/* ===== diagram ===== */
+.loop-card{padding:0;margin-top:10px}
+.cld-box{position:relative;background:var(--cld-bg);border-bottom:1px solid var(--border);
+  border-radius:calc(var(--r-card) - 1px) calc(var(--r-card) - 1px) 0 0}
+.cld-box .dots{padding:2px 0 10px}
+.slide{position:relative}
+.nudge .slide{animation:nudge 900ms ease-in-out 700ms 1 both}
+.cld{display:block;width:100%;height:auto;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.info-btn{position:absolute;top:2px;right:2px;width:var(--tap);height:var(--tap);border:0;background:transparent;
+  display:flex;align-items:center;justify-content:center;z-index:3}
+.info-btn span{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--cld-ink-soft);color:var(--cld-ink-soft);
+  font:italic 700 13px var(--font-head);display:flex;align-items:center;justify-content:center}
+.info-btn[aria-expanded="true"] span{background:var(--cld-ink-soft);color:var(--cld-bg)}
+.info-pop{position:absolute;top:42px;right:10px;left:10px;max-width:310px;margin-left:auto;background:var(--surface);
+  border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:10px 12px;font-size:13.5px;z-index:4}
+.info-pop dl{display:grid;grid-template-columns:28px 1fr;gap:4px 6px;align-items:center}
+.info-pop dt{font-weight:700;text-align:center}
+.info-pop dd{color:var(--text)}
+.info-pop .key{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);line-height:1.7}
+.info-pop .key .sym-badge{vertical-align:1px}
+.info-pop .tip{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);color:var(--muted)}
+.sym-pos{color:var(--edge-pos)} .sym-neg{color:var(--edge-neg)} .sym-delay{color:var(--cld-ink)}
+.sym-badge{display:inline-flex;width:20px;height:20px;border-radius:50%;align-items:center;justify-content:center;
+  color:var(--badge-ink);font-size:11.5px}
+.sym-badge.r{background:var(--badge-r)} .sym-badge.b{background:var(--badge-b)}
+
+/* press-and-hold peek, and the one-time hint — both float over the diagram */
+.peek{position:absolute;left:10px;right:10px;bottom:28px;z-index:5;background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;box-shadow:var(--shadow);padding:8px 12px;font-size:14px;line-height:1.4;pointer-events:none}
+.peek.top{top:8px;bottom:auto;right:52px}
+.peek.above{left:0;right:0;top:auto;bottom:calc(100% + 6px)}          /* over the tabs: clear of the finger and the diagram */
+.peek.below{left:0;right:0;bottom:auto;top:calc(100% + 6px)}
+.peek-role{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--node-hot)}
+.hint{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);z-index:2;background:var(--toast-bg);color:var(--toast-ink);
+  border-radius:12px;padding:9px 14px;font-size:13.5px;font-weight:600;line-height:1.35;text-align:center;pointer-events:none;
+  box-shadow:var(--shadow);width:max-content;max-width:calc(100% - 40px);transition:opacity var(--t-slide)}
+.hint.out{opacity:0}
+.hint svg{display:block;margin:0 auto 4px;width:44px;height:16px}
+
+/* SVG parts — the CLD visual language of CLD Editor v0.6 / CLD Latecoming Drivers v1.4.2 */
+.cld .edge{fill:none;stroke-width:1.9;stroke-linecap:round}
+.cld .pos .edge{stroke:var(--edge-pos)} .cld .neg .edge{stroke:var(--edge-neg)}
+.cld .pos .head{fill:var(--edge-pos)} .cld .neg .head{fill:var(--edge-neg)}
+.cld .pol-bg{fill:var(--cld-bg)}
+.cld .pol{font:700 19px var(--font)}
+.cld .pos .pol{fill:var(--edge-pos)} .cld .neg .pol{fill:var(--edge-neg)}
+.cld .delay{stroke:var(--cld-ink);stroke-width:2.3;stroke-linecap:butt}
+.cld .e{transition:opacity var(--t-fast)}
+.cld .e.off{opacity:.12}
+.cld .e.cur .edge{stroke-width:3.4}
+.cld .e.cur .edge.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw var(--t-draw) ease-out forwards}
+.cld .e.cur .head,.cld .e.cur .pol,.cld .e.cur .pol-bg,.cld .e.cur .delay{animation:fadein var(--t-fast) ease-out both;animation-delay:calc(var(--t-draw) - 120ms)}
+.cld .e.cut .edge{stroke-dasharray:5 5;opacity:.4}
+.cld .e.cut .head,.cld .e.cut .pol{opacity:.4}
+.cld .cutmark circle{fill:var(--cut);stroke:var(--cld-bg);stroke-width:3}
+.cld .cutmark line{stroke:var(--cut-ink);stroke-width:2.4;stroke-linecap:round}
+.cld .cutmark .ring{fill:none;stroke:var(--cut);stroke-width:2;opacity:.6;transform-box:fill-box;transform-origin:center;animation:ring 1.6s ease-out infinite}
+.cld .node{cursor:pointer;transition:opacity var(--t-fast)}
+.cld .node rect{fill:var(--node-fill);stroke-width:2}
+.cld .node.r rect{stroke:var(--node-r)}
+.cld .node.b rect{stroke:var(--node-b);stroke-dasharray:6 3}
+.cld .node.c rect{fill:var(--node-central);stroke:none}
+.cld .node text{fill:var(--cld-ink);font:600 12.5px var(--font)}
+.cld .node.c text{fill:var(--node-central-ink)}
+.cld .node.dim{opacity:.28}
+.cld .node:focus{outline:none}
+.cld .node:focus-visible rect{stroke:var(--focus);stroke-width:3;stroke-dasharray:none}
+.cld .badge circle{fill:var(--badge-r)} .cld .badge.b circle{fill:var(--badge-b)}
+.cld .badge text{fill:var(--badge-ink);font:700 12.5px var(--font)}
+.cld .badge{transition:opacity var(--t-fast)}
+.cld .badge.off{opacity:.1}
+.cld .badge.broken{opacity:.22}
+.cld .badge.pop{transform-box:fill-box;transform-origin:center;animation:pop 460ms ease-out}
+/* peek: only the held box and its own arrows stay lit (after the step rules, so it wins) */
+.cld.peeking .e{opacity:.08}
+.cld.peeking .e.hot{opacity:1}
+.cld.peeking .e.hot .edge{stroke-width:3.2;stroke-dasharray:none}
+.cld.peeking .node{opacity:.25}
+.cld.peeking .node.hot,.cld.peeking .node.nb{opacity:1}
+.cld.peeking .node.hot rect{stroke:var(--node-hot);stroke-width:3.2;stroke-dasharray:none}
+.cld.peeking .node.c.hot rect{stroke:var(--node-hot)}
+.cld.peeking .badge,.cld.peeking .cutmark{opacity:.12}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes ring{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.9);opacity:0}}
+@keyframes nudge{0%,100%{transform:translateX(0)}45%{transform:translateX(-34px)}}
+@keyframes in-l{from{transform:translateX(-28px);opacity:0}to{transform:none;opacity:1}}
+@keyframes in-r{from{transform:translateX(28px);opacity:0}to{transform:none;opacity:1}}
+
+/* ===== mode strip + panel (the panel swipes: left = Next, right = Back) ===== */
+.body{padding:12px var(--card-pad) var(--card-pad)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg button{min-height:var(--tap);border:1px solid var(--border);background:var(--surface);border-radius:var(--r-btn);
+  font-weight:600;font-size:14px;color:var(--muted);padding:6px 8px;transition:background var(--t-fast),color var(--t-fast)}
+.seg button[aria-pressed="true"]{background:var(--btn-2-bg);color:var(--btn-2-ink);border-color:var(--btn-2-ink)}
+.seg button.break[aria-pressed="true"]{background:var(--cut-soft);color:var(--text);border-color:var(--cut)}
+.panel{margin-top:12px;touch-action:pan-y}
+.pane{min-height:118px;display:flex;flex-direction:column}
+.pane.in-l{animation:in-l var(--t-slide) ease-out}
+.pane.in-r{animation:in-r var(--t-slide) ease-out}
+.pane.dragging{transition:none}
+.pane.settle{transition:transform var(--t-slide) ease-out}
+.segs{display:flex;gap:4px;margin:2px 0 10px}
+.segs i{flex:1;height:4px;border-radius:2px;background:var(--dot)}
+.segs i.on{background:var(--dot-on)}
+.caption{font-size:16px;line-height:1.45;flex:1}
+.sign{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;font-weight:700;
+  font-size:15px;margin-right:6px;vertical-align:1px;background:var(--cld-bg)}
+.sign.pos{color:var(--edge-pos)} .sign.neg{color:var(--edge-neg)}
+.tag-delay{font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--border);border-radius:var(--r-pill);
+  padding:1px 7px;margin-left:6px;white-space:nowrap;vertical-align:2px}
+.risk{border-left:4px solid var(--bad);background:var(--bad-soft);border-radius:0 10px 10px 0;padding:10px 12px;flex:1}
+.risk b{display:block;color:var(--bad);font-size:12px;letter-spacing:.6px;text-transform:uppercase}
+.risk strong{display:block;font-size:17px;margin-top:2px}
+.risk p{font-size:14.5px;color:var(--text);margin-top:2px}
+.nav{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:12px}
+.btn{min-height:var(--tap);border-radius:var(--r-btn);border:1px solid var(--border);background:var(--surface);font-weight:600;
+  font-size:15px;padding:8px 12px}
+.btn.primary{background:var(--btn-bg);color:var(--btn-ink);border-color:var(--btn-bg)}
+.btn:disabled{opacity:.4;cursor:default}
+.cut-head{display:flex;align-items:flex-start;gap:8px;font-size:15.5px;line-height:1.45}
+.cut-ico{flex:0 0 22px;height:22px;border-radius:50%;background:var(--cut);position:relative;margin-top:1px}
+.cut-ico::before,.cut-ico::after{content:"";position:absolute;left:5px;right:5px;top:10px;height:2.4px;border-radius:2px;background:var(--cut-ink)}
+.cut-ico::before{transform:rotate(45deg)} .cut-ico::after{transform:rotate(-45deg)}
+.egs{list-style:none;margin-top:10px;display:grid;gap:8px}
+.egs li{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;font-size:14px;background:var(--surface-2);
+  border-radius:10px;padding:9px 10px;min-width:0}
+.school{font-size:11.5px;font-weight:700;letter-spacing:.4px;background:var(--pill-bg);color:var(--pill-ink);
+  border-radius:6px;padding:2px 6px;margin-top:1px}
+.also{font-size:14px;color:var(--muted);margin-top:8px}
+
+/* ===== quick check: swipeable cards, the next one peeks in ===== */
+.qtrack{margin:12px calc(-1 * var(--card-pad)) 0;padding:0 var(--card-pad) 2px;scroll-padding-inline:var(--card-pad);gap:10px}
+.qtrack > .qcard{flex-basis:86%}
+.qcard{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column}
+.q-text{display:grid;grid-template-columns:26px 1fr;gap:8px;font-size:15px;min-height:68px}
+.q-id{width:26px;height:26px;border-radius:50%;background:var(--pill-bg);color:var(--pill-ink);font-weight:700;font-size:13px;
+  display:flex;align-items:center;justify-content:center}
+.q-opts{display:grid;gap:6px;margin-top:10px}
+.q-opts button{min-height:var(--tap);border:1px solid var(--border);background:var(--surface);border-radius:var(--r-btn);
+  font-size:14px;font-weight:600;line-height:1.2;padding:6px 10px;color:var(--text);text-align:left}
+.q-opts button.right{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.q-opts button.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.q-opts button:disabled{cursor:default}
+.q-opts button:disabled:not(.right):not(.wrong){opacity:.45}
+.q-why{font-size:14px;margin-top:8px}
+.q-why b{color:var(--good)}
+.q-next{margin-top:auto;padding-top:10px;display:flex;justify-content:flex-end}
+.quiz-foot{display:flex;flex-direction:column;align-items:center;margin-top:2px}
+#qScore:not(:empty){display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+.q-score{font-weight:600}
+
+/* ===== where is our energy ===== */
+.flow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;margin-top:12px}
+.flow button{min-height:var(--tap);border:1px solid var(--border);background:var(--surface);border-radius:var(--r-btn);
+  font-weight:600;font-size:14px;color:var(--muted)}
+.flow button.up[aria-pressed="true"]{background:var(--up-soft);border-color:var(--up);color:var(--up)}
+.flow button.down[aria-pressed="true"]{background:var(--down-soft);border-color:var(--down);color:var(--text)}
+.flow svg{width:34px;height:16px;color:var(--subtle)}
+.energy-sub{font-size:13px;font-weight:600;color:var(--muted);margin-top:12px}
+.energy-list{list-style:none;margin-top:6px;display:grid;gap:6px}
+.energy-list li{display:flex;align-items:center;gap:10px;font-size:14.5px;padding:8px 10px;border-radius:10px;background:var(--surface-2);min-width:0}
+.energy-list li::before{content:"";flex:0 0 8px;height:8px;border-radius:50%;background:var(--down)}
+.energy-list.up li::before{background:var(--up)}
+
+/* ===== footer ===== */
+.foot{margin-top:18px;text-align:center;font-size:13px;color:var(--muted)}
+.foot p + p{margin-top:8px}
+.foot a{display:inline-flex;align-items:center;min-height:var(--tap);color:var(--heading);font-weight:600}
+
+@media (min-width:700px){ .wrap{padding-top:22px} .intro{font-size:15px} }
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .cld .e.cur .edge.draw{stroke-dasharray:none;stroke-dashoffset:0}
+}
+</style>
+
+<header class="topbar"><div class="topbar-in"><div class="brand">
+  <span class="brand-icon" aria-hidden="true">R</span>
+  <span class="brand-name">Rosetta<span class="brand-sep">:</span></span>
+  <span class="brand-sub" id="appName">Late-coming Loops</span>
+  <span class="brand-version" id="appVer">v0.3</span>
+</div></div></header>
+
+<main class="wrap">
+  <p class="intro">We used these three loops on 2 Jul to ask why <span class="nowrap">late-coming</span> keeps coming back.</p>
+
+  <div class="tabs" role="tablist" aria-label="Loops" id="tabs"></div>
+
+  <section class="card loop-card" id="loopCard" role="tabpanel">
+    <div class="cld-box">
+      <div class="track" id="track" aria-roledescription="carousel" aria-label="Loops"></div>
+      <div class="dots" id="loopDots" aria-hidden="true"></div>
+      <button class="info-btn" id="infoBtn" aria-expanded="false" aria-controls="infoPop" aria-label="How to read the diagram"><span>i</span></button>
+      <div class="info-pop" id="infoPop" hidden>
+        <dl>
+          <dt class="sym-pos">+</dt><dd>The two move the same way (the template’s s).</dd>
+          <dt class="sym-neg">−</dt><dd>They move in opposite ways (the template’s o).</dd>
+          <dt class="sym-delay">‖</dt><dd>The effect takes time.</dd>
+        </dl>
+        <p class="key"><span class="sym-badge b">B</span> = a balancing loop: it pulls back towards a level. <span class="sym-badge r">R</span> = a reinforcing loop: it keeps pushing the same way.</p>
+        <p class="tip" id="infoTip"></p>
+      </div>
+      <div class="peek" id="peek" hidden><span class="peek-role" id="peekRole"></span><span id="peekText"></span></div>
+      <div class="hint" id="hint" hidden aria-hidden="true">
+        <svg viewBox="0 0 44 16"><path d="M3 8h38M9 3 3 8l6 5M35 3l6 5-6 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="hintText"></span>
+      </div>
+    </div>
+    <div class="body">
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" data-mode="step" aria-pressed="true"></button>
+        <button type="button" data-mode="break" class="break" aria-pressed="false"></button>
+      </div>
+      <div class="panel" id="panel" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="card" id="quizCard" aria-labelledby="quizH">
+    <h2 id="quizH"></h2>
+    <div class="track qtrack" id="qtrack" aria-roledescription="carousel" aria-label="Examples"></div>
+    <div class="quiz-foot"><div class="dots" id="qDots"></div><div id="qScore" aria-live="polite"></div></div>
+  </section>
+
+  <section class="card" aria-labelledby="energyH">
+    <h2 id="energyH">Where is our energy?</h2>
+    <p class="lead">Most of it goes to students who are already late.</p>
+    <div class="flow" role="group" aria-label="Upstream or downstream">
+      <button type="button" class="up" data-side="up" aria-pressed="false">Upstream</button>
+      <svg viewBox="0 0 34 16" aria-hidden="true"><path d="M2 8 Q9 2 17 8 T32 8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M27 4 L32 8 L27 12" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+      <button type="button" class="down" data-side="down" aria-pressed="true">Downstream</button>
+    </div>
+    <p class="energy-sub" id="energySub"></p>
+    <ul class="energy-list" id="energyList"></ul>
+  </section>
+
+  <footer class="foot">
+    <p>From NLC Group D, West Zone Student Management, 2026.</p>
+    <p>The diagrams follow the templates in<br><a id="srcLink" target="_blank" rel="noopener">Systems Archetypes I (The Systems Thinker) ↗</a></p>
+    <a id="detailLink" target="_blank" rel="noopener" hidden>More about our NLC ↗</a>
+  </footer>
+</main>
+
+<script>
+"use strict";
+const APP_VERSION = '0.3.0';
+const APP_DISPLAY_NAME = 'Late-coming Loops';
+const DETAIL_URL = 'https://dataiskoo.notion.site/3f8781292b9481769bbbfe14878f3111';   // NLC detail page — the link stays hidden while this is empty
+const SOURCE_URL = 'https://thesystemsthinker.com/wp-content/uploads/2016/03/Systems-Archetypes-I-TRSA01_pk.pdf';
+const HOLD_MS = 450, SWIPE_PX = 48, HINT_KEY = 'lcl-hint-seen-v2';
+
+/* ===== THE TEMPLATES — transcribed from Systems Archetypes I, "Systems Archetypes at a Glance" (pp. 6–7).
+   s = same direction, o = opposite direction, 'delay' marks the link the template draws "Delay" on.
+   validate() checks every school diagram below against these, link by link and loop by loop. ===== */
+const TEMPLATES = {
+  'Fixes That Fail': {
+    links:[['Problem Symptom','Fix','s'], ['Fix','Problem Symptom','o'],
+           ['Fix','Unintended Consequence','s','delay'], ['Unintended Consequence','Problem Symptom','s']],
+    loops:{B1:['Problem Symptom','Fix'], R2:['Problem Symptom','Fix','Unintended Consequence']} },
+  'Shifting the Burden': {
+    links:[['Problem Symptom','External Intervention','s'], ['External Intervention','Problem Symptom','o'],
+           ['Problem Symptom','Internal Solution','s'], ['Internal Solution','Problem Symptom','o','delay'],
+           ['External Intervention','Dependence on External Intervention','s'], ['Dependence on External Intervention','Internal Solution','o']],
+    loops:{B1:['Problem Symptom','External Intervention'], B2:['Problem Symptom','Internal Solution'],
+           R3:['Problem Symptom','External Intervention','Dependence on External Intervention','Internal Solution']} },
+  'Drifting Goals': {
+    links:[['Goal','Gap','s'], ['Actual','Gap','o'], ['Gap','Corrective Action','s'], ['Corrective Action','Actual','s','delay'],
+           ['Gap','Pressure to Lower Goal','s'], ['Pressure to Lower Goal','Goal','o']],
+    loops:{B1:['Gap','Corrective Action','Actual'], B2:['Goal','Gap','Pressure to Lower Goal']} },
+};
+
+/* ===== DATA — one array drives the tabs, the diagrams, the steps, the peeks, the cuts and the quiz buttons.
+   Each node is one template variable (role) with a school label, placed where the template places it.
+   Each loop (named as in the template) is an ellipse {cx, cy, rx, ry, dir} in the 360 × 300 diagram space;
+   dir 'cw' / 'ccw' is the way its arrows run on screen. Nodes sit on their ellipses, and loops that share a
+   node meet there. Each link rides on one loop (on:) and is drawn as an arc of that ellipse; a link shared
+   by two loops rides on the one the template draws it on. Badges sit at the ellipse centre unless badgeAt
+   moves them. Links use the template's s/o and are listed in step order. Loop type (R/B) is computed from
+   the signs. ===== */
+const LOOPS = [
+  { name:'Fixes That Fail',
+    summary:'The fix brings late-coming down (B1), but its side effect brings it back (R2).',
+    nodes:[
+      {id:'symptom',    role:'Problem Symptom',        label:'Late-coming',                                 x:75,  y:92,  central:true,
+        means:'Late-coming: what we see every morning.'},
+      {id:'fix',        role:'Fix',                    label:'More\nconsequences',                          x:285, y:92,
+        means:'More consequences: detention and escalation, which work fast.'},
+      {id:'unintended', role:'Unintended Consequence', label:'Teachers tired,\nless time for\nrelationships', x:180, y:256,
+        means:'The cost of the fix that nobody planned for.'},
+    ],
+    ellipses:{ B1:{cx:180, cy:92,  rx:105, ry:50, dir:'cw'},
+               R2:{cx:180, cy:158, rx:160, ry:98, dir:'cw'} },
+    links:[
+      {s:'symptom',    t:'fix',        p:'s', on:'B1', say:'When late-coming goes up, we add consequences such as detention.'},
+      {s:'fix',        t:'symptom',    p:'o', on:'B1', say:'Late-coming falls for a while.'},
+      {s:'fix',        t:'unintended', p:'s', on:'R2', delay:true, say:'Over time, the extra follow-up tires teachers and leaves less time for relationships.'},
+      {s:'unintended', t:'symptom',    p:'s', on:'R2', say:'With less time for relationships, late-coming creeps back up.'},
+    ],
+    badgeAt:{R2:[180,192]},
+    risk:{name:'Temporary relief', text:'The problem comes back, often worse.'},
+    cut:{link:2, text:'Accept that more consequences only ease the symptom, and work on the real problem at the same time.',
+      eg:[['CWSS','Student Counsellors run the morning assembly and talk to late-comers.'],
+          ['ZHSS','Repeat late-comers lead a check-in with their FT or YH.']]}
+  },
+  { name:'Shifting the Burden',
+    summary:'Chasing works (B1), but students come to rely on it (R3) and build fewer routines (B2).',
+    nodes:[
+      {id:'external',   role:'External Intervention',               label:'Adults\nchasing',           x:150, y:40,
+        means:'Adults chasing: what adults do to fix it fast.'},
+      {id:'symptom',    role:'Problem Symptom',                     label:'Late-coming',               x:78,  y:150, central:true,
+        means:'Late-coming: what we see every morning.'},
+      {id:'internal',   role:'Internal Solution',                   label:'Student’s own\nroutines',   x:150, y:262,
+        means:'Student’s own routines: what fixes it for good, but slowly.'},
+      {id:'dependence', role:'Dependence on External Intervention', label:'Students\nrely on\nadults',  x:300, y:150,
+        means:'Students rely on adults: they wait to be chased.'},
+    ],
+    ellipses:{ B1:{cx:108, cy:92,  rx:66,  ry:56,  dir:'ccw'},
+               B2:{cx:108, cy:208, rx:66,  ry:56,  dir:'cw'},
+               R3:{cx:160, cy:150, rx:140, ry:114, dir:'cw'} },
+    links:[
+      {s:'symptom',    t:'external',   p:'s', on:'B1', say:'When a student comes late, adults chase with reminders, calls home and consequences.'},
+      {s:'external',   t:'symptom',    p:'o', on:'B1', say:'Late-coming falls quickly.'},
+      {s:'symptom',    t:'internal',   p:'s', on:'B2', say:'Late-coming could also push the student to fix his own routines.'},
+      {s:'internal',   t:'symptom',    p:'o', on:'B2', delay:true, say:'Better routines bring late-coming down for good, but slowly.'},
+      {s:'external',   t:'dependence', p:'s', on:'R3', say:'The more adults chase, the more students rely on them.'},
+      {s:'dependence', t:'internal',   p:'o', on:'R3', say:'Students who rely on adults build fewer routines of their own.'},
+    ],
+    badgeAt:{R3:[200,150]},
+    risk:{name:'Adult dependence', text:'The adults’ role keeps growing until students depend on it.'},
+    cut:{link:4, text:'Build up the student’s own routines while adults still help, then step back.',
+      eg:[['ZHSS','Students plan their route, bus times and morning schedule.'],
+          ['ZHSS','Repeat late-comers set a weekly goal and track it themselves.']]}
+  },
+  { name:'Drifting Goals',
+    summary:'Lowering the goal (B2) closes the gap faster than fixing the barriers (B1).',
+    nodes:[
+      {id:'goal',     role:'Goal',                   label:'Her goal:\non time every day',     x:96,  y:62,
+        means:'What she aims for.'},
+      {id:'pressure', role:'Pressure to Lower Goal', label:'Discouragement',                  x:272, y:62,
+        means:'Discouragement: the pull to aim lower.'},
+      {id:'gap',      role:'Gap',                    label:'The gap\n(late-coming)',          x:180, y:154, central:true,
+        means:'How far she is from her goal. Here, it is her late-coming.'},
+      {id:'actual',   role:'Actual',                 label:'How often she\nis on time',       x:82,  y:246,
+        means:'What really happens.'},
+      {id:'action',   role:'Corrective Action',      label:'Fixing the\nbarriers',            x:282, y:246,
+        means:'Fixing the barriers: the real fix, which is slow.'},
+    ],
+    ellipses:{ B2:{cx:180, cy:92,  rx:118, ry:62, dir:'ccw'},
+               B1:{cx:180, cy:216, rx:118, ry:62, dir:'cw'} },
+    links:[
+      {s:'goal',     t:'gap',      p:'s', on:'B2', say:'The higher her goal, the bigger the gap.'},
+      {s:'actual',   t:'gap',      p:'o', on:'B1', say:'The more often she is on time, the smaller the gap.'},
+      {s:'gap',      t:'action',   p:'s', on:'B1', say:'The gap should push us to fix the barriers: sleep, family routine and transport.'},
+      {s:'action',   t:'actual',   p:'s', on:'B1', delay:true, say:'Fixing the barriers gets her in on time more often, but slowly.'},
+      {s:'gap',      t:'pressure', p:'s', on:'B2', say:'When the gap stays open, she grows discouraged.'},
+      {s:'pressure', t:'goal',     p:'o', on:'B2', say:'Discouraged, she lowers her goal, and the gap closes at once.'},
+    ],
+    badgeAt:{B2:[180,98], B1:[180,210]},
+    risk:{name:'Lowered standards', text:'Lateness becomes “normal”.'},
+    cut:{link:5, text:'Ask what sets her goal. A goal set by a routine, or agreed with an adult, drifts less.',
+      eg:[['CWSS','On arrival, students go straight to the assembly venue. Close to half are there about 10 minutes early.'],
+          ['ZHSS','Repeat late-comers agree a weekly punctuality goal with their FT or YH.']],
+      also:'Work on the barriers too: sleep, routines and transport.'}
+  },
+];
+
+const QUIZ = [
+  {id:'A', text:'We added a second detention. Late-coming fell for a month, then came back.', loop:0,
+   why:'The second detention is a quick fix, and it brought late-coming down for a while (B1). Then its side effect brought late-coming back (R2). In Shifting the Burden the fix keeps working, but here it stopped working.'},
+  {id:'B', text:'He is on time only on the days his Form Teacher calls him in the morning.', loop:1,
+   why:'The call is the adults’ quick fix, and it keeps working (B1). But he now relies on it (R3), so his own routine (B2) does not grow. In Fixes That Fail the problem comes back even with the fix, but here it stays away as long as the calls go on.'},
+  {id:'C', text:'She tells her teacher, “I’m always late anyway, so what’s the point?”', loop:2,
+   why:'She can close the gap in two ways: fix the barriers (B1), which is slow, or lower her goal (B2), which is quick. “What’s the point?” shows that her goal has dropped. No adult fix is involved, so it is neither Fixes That Fail nor Shifting the Burden.'},
+];
+
+const ENERGY = {
+  down:{sub:'Downstream: where most of our time goes',
+    items:['Detention and escalating consequences','Morning reminders and PA announcements','Calls home','Tracking late-comers','Teacher follow-up and chasing']},
+  up:{sub:'Upstream: where change starts',
+    items:['Sleep habits','Student motivation and purpose','First-period experience','Peer norms and belonging','Teacher–student relationships']},
+};
+
+const STRINGS = {
+  step:'Step through', breakIt:'Where to break it', quiz:'Quick check',
+  start:'Start ›', next:'Next ›', back:'‹ Back', nextLoop:'Next loop ›', again:'Try again', risk:'Risk',
+  hintTouch:'Swipe for the other loops.<br>Hold a box to see its arrows.', hintMouse:'Click a box to see its arrows.',
+  tip:'Tap or hold a box to see its arrows and its name in the template.',
+};
+
+/* ===== STATE — one object drives the whole page ===== */
+const S = { tab:0, mode:'step', step:0, peek:null, quiz:{}, qi:0, side:'down' };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const reduceMotion = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const coarse = () => window.matchMedia && matchMedia('(hover: none) and (pointer: coarse)').matches;
+const scrollBehaviour = () => reduceMotion() ? 'auto' : 'smooth';
+const sym = p => p === 'o' ? '−' : '+';
+const polCls = p => p === 'o' ? 'neg' : 'pos';
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+                set(k, v){ try { localStorage.setItem(k, v); } catch(e){} } };
+
+/* ===== loop maths: find every loop in the links, and compute R/B from the signs ===== */
+function findCycles(L){
+  const idx = {}; L.nodes.forEach((n, i) => idx[n.id] = i);
+  const out = [];
+  const walk = (start, at, path, seen) => L.links.forEach((k, li) => {
+    if (k.s !== at) return;
+    if (k.t === start) out.push([...path, li]);
+    else if (idx[k.t] > idx[start] && !seen.has(k.t)){ seen.add(k.t); walk(start, k.t, [...path, li], seen); seen.delete(k.t); }
+  });
+  L.nodes.forEach(n => walk(n.id, n.id, [], new Set([n.id])));   // each loop is found once, from its first node
+  return out.map(links => ({
+    links,
+    type: links.reduce((acc, li) => acc * (L.links[li].p === 'o' ? -1 : 1), 1) > 0 ? 'R' : 'B',
+    roles: [...new Set(links.map(li => L.nodes.find(n => n.id === L.links[li].s).role))].sort(),
+  }));
+}
+
+function prepare(){
+  LOOPS.forEach(L => {
+    L.byId = {}; L.nodes.forEach(n => { L.byId[n.id] = n; const d = nodeDims(n); n._w = d[0]; n._h = d[1]; });
+    L.cycles = findCycles(L);
+    const T = TEMPLATES[L.name] || {loops:{}};
+    Object.entries(T.loops).forEach(([name, roles]) => {
+      const c = L.cycles.find(c => c.roles.join('|') === [...roles].sort().join('|'));
+      if (c) c.name = name;
+    });
+    // node colour comes from the loops it sits on: any reinforcing loop → r, else b (the late-coming node is c)
+    L.nodes.forEach(n => {
+      const onR = L.cycles.some(c => c.type === 'R' && c.links.some(li => L.links[li].s === n.id));
+      n.type = n.central ? 'c' : onR ? 'r' : 'b';
+    });
+  });
+}
+
+/* The check Koo asked for: links, polarities, the delay and the loops must come out exactly as the template. */
+function validate(){
+  const report = []; let ok = true;
+  const fail = (L, msg) => { ok = false; console.error('[loop check] ' + L.name + ': ' + msg); };
+  const key = (a, b, p, d) => `${a} -${p}${d ? ' (delay)' : ''}-> ${b}`;
+  LOOPS.forEach(L => {
+    const T = TEMPLATES[L.name]; if (!T) return fail(L, 'no template');
+    const roles = L.nodes.map(n => n.role).sort().join('|');
+    const tRoles = [...new Set(T.links.flatMap(k => [k[0], k[1]]))].sort().join('|');
+    if (roles !== tRoles) fail(L, 'variables differ from the template');
+    const mine = L.links.map(k => {
+      if (!L.byId[k.s] || !L.byId[k.t]) { fail(L, 'link to an unknown node'); return '?'; }
+      return key(L.byId[k.s].role, L.byId[k.t].role, k.p, k.delay);
+    }).sort();
+    const theirs = T.links.map(([a, b, p, d]) => key(a, b, p, d === 'delay')).sort();
+    if (mine.join('\n') !== theirs.join('\n')) fail(L, 'links differ from the template\n mine:   ' + mine.join(' | ') + '\n theirs: ' + theirs.join(' | '));
+    const names = Object.keys(T.loops);
+    if (L.cycles.length !== names.length) fail(L, `the links make ${L.cycles.length} loops; the template has ${names.length}`);
+    L.cycles.forEach(c => { if (!c.name) fail(L, 'a loop that is not in the template: ' + c.roles.join(', ')); });
+    names.forEach(nm => {
+      const c = L.cycles.find(c => c.name === nm);
+      if (!c) return fail(L, nm + ' is missing');
+      if (c.type !== nm[0]) fail(L, `${nm} computes as ${c.type} from its signs`);
+      const E = L.ellipses[nm];
+      if (!E) return fail(L, nm + ' has no ellipse');
+      if (E.dir !== 'cw' && E.dir !== 'ccw') fail(L, nm + ' has no direction');
+      // a link may only ride on a loop it belongs to, and its two ends must sit on that ellipse
+      L.links.forEach((k, li) => {
+        if (k.on !== nm) return;
+        if (!c.links.includes(li)) fail(L, `${L.byId[k.s].label} → ${L.byId[k.t].label} is drawn on ${nm} but is not part of it`);
+        [k.s, k.t].forEach(id => { const n = L.byId[id]; if (!inPill(n, ellPt(E, ellAngle(E, n)), 0)) fail(L, `${n.label.replace(/\n/g, ' ')} is too far from ${nm}`); });
+      });
+    });
+    L.links.forEach(k => { if (!L.ellipses[k.on]) fail(L, `a link rides on ${k.on}, which has no ellipse`); });
+    if (L.links.filter(k => k.delay).length !== T.links.filter(k => k[3] === 'delay').length) fail(L, 'delay count differs');
+    if (!L.links[L.cut.link]) fail(L, 'cut link missing');
+    report.push(L.name + ': ' + L.cycles.map(c => `${c.name || '?'} computes ${c.type} (${c.links.map(li => sym(L.links[li].p)).join('')})`).join('; '));
+  });
+  window.__loopCheck = {ok, report};
+  (ok ? console.info : console.error)('[loop check] ' + (ok ? 'every loop matches its template' : 'MISMATCH') + '\n' + report.join('\n'));
+  return ok;
+}
+
+/* ===== the one diagram renderer ===== */
+const LINE_H = 15, CHAR_W = 7.4, GAP = 3, HEAD = 10, TAU = 2 * Math.PI;
+const f1 = v => v.toFixed(1);
+/* Each box is a pill (fully rounded ends), wide enough that every line of its label clears the rounded ends. */
+function nodeDims(n){
+  const lines = n.label.split('\n'), h = lines.length * LINE_H + 17, r = h / 2;
+  const half = Math.max(...lines.map((ln, i) => {
+    const d = Math.min(r - 1, Math.abs(i - (lines.length - 1) / 2) * LINE_H + 6);    // the line's far edge from the middle
+    return ln.length * CHAR_W / 2 + (r - Math.sqrt(r * r - d * d)) + 10;
+  }));
+  return [Math.max(80, half * 2), h];
+}
+function inPill(n, p, m){                                                           // is p inside n's pill, grown by m?
+  const r = n._h / 2, dx = Math.max(0, Math.abs(p.x - n.x) - (n._w / 2 - r)), dy = Math.abs(p.y - n.y);
+  return Math.hypot(dx, dy) <= r + m;
+}
+/* Ellipse maths with screen y pointing down, so a growing angle runs clockwise. */
+const ellPt = (E, a) => ({x:E.cx + E.rx * Math.cos(a), y:E.cy + E.ry * Math.sin(a)});
+const ellAngle = (E, n) => Math.atan2((n.y - E.cy) / E.ry, (n.x - E.cx) / E.rx);
+const ellSpeed = (E, a) => Math.hypot(E.rx * Math.sin(a), E.ry * Math.cos(a));
+const ellTan = (E, a, sg) => { const x = -E.rx * Math.sin(a) * sg, y = E.ry * Math.cos(a) * sg, l = Math.hypot(x, y) || 1; return {x:x / l, y:y / l}; };
+
+/* A link drawn as an arc of its loop's ellipse: it leaves the source pill and stops at the target pill,
+   running the loop's way round. len is the visible arc's length; at(d) gives the point and direction d px along it.
+   marks: the sign sits near the arrowhead (as in the template), the delay mark a third of the way along, and
+   the cut halfway between the delay mark (or the start) and the sign, so the three never overlap. */
+function linkArc(L, k){
+  const E = L.ellipses[k.on], s = L.byId[k.s], t = L.byId[k.t], sg = E.dir === 'cw' ? 1 : -1;
+  const a0 = ellAngle(E, s);
+  let span = sg * (ellAngle(E, t) - a0);
+  while (span <= 0) span += TAU;
+  while (span > TAU) span -= TAU;
+  const M = 200, ang = i => a0 + sg * span * i / M;
+  let i0 = 0, i1 = M;
+  while (i0 < M && inPill(s, ellPt(E, ang(i0)), GAP)) i0++;
+  while (i1 > i0 && inPill(t, ellPt(E, ang(i1)), GAP)) i1--;
+  const b0 = ang(i0), b1 = ang(i1), bEnd = b1 - sg * 6 / ellSpeed(E, b1);       // the line stops under the arrowhead
+  const p0 = ellPt(E, b0), pe = ellPt(E, bEnd);
+  const cum = [0];                                                                // arc length at each sample
+  for (let i = i0 + 1; i <= i1; i++){ const a = ellPt(E, ang(i - 1)), b = ellPt(E, ang(i)); cum.push(cum[cum.length - 1] + Math.hypot(b.x - a.x, b.y - a.y)); }
+  const len = cum[cum.length - 1];
+  const at = d => {
+    if (cum.length < 2) return {p:p0, u:ellTan(E, b0, sg)};
+    let j = 1; while (j < cum.length - 1 && cum[j] < d) j++;
+    const f = cum[j] > cum[j - 1] ? (d - cum[j - 1]) / (cum[j] - cum[j - 1]) : 0, a = ang(i0 + j - 1 + Math.max(0, Math.min(1, f)));
+    return {p:ellPt(E, a), u:ellTan(E, a, sg)};
+  };
+  const sign = Math.max(len * 0.5, len - Math.max(26, len * 0.28)), delay = len / 3;
+  return {
+    d:`M${f1(p0.x)},${f1(p0.y)} A${E.rx},${E.ry} 0 ${Math.abs(bEnd - b0) > Math.PI ? 1 : 0} ${sg > 0 ? 1 : 0} ${f1(pe.x)},${f1(pe.y)}`,
+    tip:ellPt(E, b1), u:ellTan(E, b1, sg), len, at,
+    marks:{sign, delay, cut:((k.delay ? delay : 0) + sign) / 2},
+  };
+}
+
+function linkStates(L, st){
+  const N = L.links.length;
+  return L.links.map((k, i) => {
+    if (st.mode === 'break') return i === L.cut.link ? 'cut' : 'on';
+    if (st.step === 0 || st.step > N) return 'on';
+    return i < st.step - 1 ? 'on' : i === st.step - 1 ? 'cur' : 'off';
+  });
+}
+
+function drawLoop(L, svg, st, active){
+  const ls = linkStates(L, st), N = L.links.length;
+  const order = {off:0, cut:1, on:2, cur:3};
+  let eSvg = '', cutSvg = '';
+
+  L.links.map((k, i) => i).sort((a, b) => order[ls[a]] - order[ls[b]]).forEach(i => {
+    const k = L.links[i], A = linkArc(L, k), u = A.u, tip = A.tip, nx = -u.y, ny = u.x;
+    const head = `M${f1(tip.x)},${f1(tip.y)} L${f1(tip.x - u.x*HEAD + nx*5)},${f1(tip.y - u.y*HEAD + ny*5)} L${f1(tip.x - u.x*HEAD - nx*5)},${f1(tip.y - u.y*HEAD - ny*5)}Z`;
+    const pp = A.at(A.marks.sign).p;
+    let delay = '';
+    if (k.delay){
+      const {p:m, u:tu} = A.at(A.marks.delay), pn = {x:-tu.y, y:tu.x};
+      [-2.8, 2.8].forEach(o => {
+        const cx = m.x + tu.x * o, cy = m.y + tu.y * o;
+        delay += `<line class="delay" x1="${f1(cx - pn.x*7)}" y1="${f1(cy - pn.y*7)}" x2="${f1(cx + pn.x*7)}" y2="${f1(cy + pn.y*7)}"/>`;
+      });
+    }
+    const draw = active && ls[i] === 'cur' && !reduceMotion();
+    eSvg += `<g class="e ${polCls(k.p)} ${ls[i]}" data-s="${k.s}" data-t="${k.t}">
+      <path class="edge${draw ? ' draw' : ''}"${draw ? ' pathLength="1"' : ''} d="${A.d}"/>
+      <path class="head" d="${head}"/>${delay}
+      <circle class="pol-bg" cx="${f1(pp.x)}" cy="${f1(pp.y)}" r="9.5"/>
+      <text class="pol" x="${f1(pp.x)}" y="${f1(pp.y + 6.5)}" text-anchor="middle">${sym(k.p)}</text></g>`;
+    if (ls[i] === 'cut'){
+      const m = A.at(A.marks.cut).p;
+      cutSvg = `<g class="cutmark"><circle class="ring" cx="${f1(m.x)}" cy="${f1(m.y)}" r="11"/><circle cx="${f1(m.x)}" cy="${f1(m.y)}" r="11.5"/>
+        <line x1="${f1(m.x-4.2)}" y1="${f1(m.y-4.2)}" x2="${f1(m.x+4.2)}" y2="${f1(m.y+4.2)}"/><line x1="${f1(m.x-4.2)}" y1="${f1(m.y+4.2)}" x2="${f1(m.x+4.2)}" y2="${f1(m.y-4.2)}"/></g>`;
+    }
+  });
+
+  // nodes — dimmed in step mode until an arrow reaches them; each is a button that opens its peek
+  const lit = new Set();
+  L.links.forEach((k, i) => { if (ls[i] !== 'off'){ lit.add(k.s); lit.add(k.t); } });
+  const nSvg = L.nodes.map(n => {
+    const lines = n.label.split('\n'), y0 = n.y - (lines.length - 1) * 7.5;
+    return `<g class="node ${n.type}${lit.has(n.id) ? '' : ' dim'}" data-id="${n.id}" role="button" tabindex="${active ? 0 : -1}"
+        aria-label="${esc(n.label.replace(/\n/g, ' '))}. ${esc(n.role)}.">
+      <rect x="${f1(n.x - n._w/2)}" y="${f1(n.y - n._h/2)}" width="${f1(n._w)}" height="${f1(n._h)}" rx="${f1(n._h / 2)}"/>
+      ${lines.map((ln, i) => `<text x="${n.x}" y="${f1(y0 + i*15 + 4.5)}" text-anchor="middle">${esc(ln)}</text>`).join('')}</g>`;
+  }).join('');
+
+  // R/B badges — letter computed from the signs, number from the template; they light up when their loop closes
+  const bSvg = L.cycles.filter(c => c.name).map(c => {
+    const E = L.ellipses[c.name], at = (L.badgeAt && L.badgeAt[c.name]) || [E.cx, E.cy], last = Math.max(...c.links);
+    let cls = 'on';
+    if (st.mode === 'break') cls = c.links.includes(L.cut.link) ? 'broken' : 'on';
+    else if (st.step >= 1 && st.step <= N) cls = last < st.step - 1 ? 'on' : last === st.step - 1 ? (active ? 'pop' : 'on') : 'off';
+    return `<g class="badge ${c.type.toLowerCase()} ${cls}"><circle cx="${at[0]}" cy="${at[1]}" r="14"/>
+      <text x="${at[0]}" y="${at[1] + 4.5}" text-anchor="middle">${c.type}${c.name.slice(1)}</text></g>`;
+  }).join('');
+
+  svg.innerHTML = eSvg + nSvg + bSvg + cutSvg;
+  svg.setAttribute('aria-label', `${L.name}. ` + L.links.map(k => `${L.byId[k.s].label.replace(/\n/g, ' ')} to ${L.byId[k.t].label.replace(/\n/g, ' ')} (${k.p === 'o' ? 'minus' : 'plus'}${k.delay ? ', with a delay' : ''})`).join('; ') + '.');
+}
+
+/* ===== shared renderers ===== */
+const dotsHTML = (n, on, tappable) => Array.from({length:n}, (_, i) => tappable
+  ? `<button type="button" data-i="${i}" aria-label="Example ${QUIZ[i].id}" aria-current="${i === on}"><i class="${i === on ? 'on' : ''}"></i></button>`
+  : `<i class="${i === on ? 'on' : ''}"></i>`).join('');
+const navHTML = (backOff, nextLabel) => `<div class="nav"><button type="button" class="btn" data-go="back" ${backOff ? 'disabled' : ''}>${STRINGS.back}</button>
+  <button type="button" class="btn primary" data-go="next">${nextLabel}</button></div>`;
+
+/* ===== panel under the diagram (step-through or where to break it) ===== */
+function renderPanel(L, dir){
+  const N = L.links.length;
+  let body, nextLabel, backOff = false;
+  if (S.mode === 'break'){
+    body = `<div class="cut-head"><span class="cut-ico" aria-hidden="true"></span><span>${esc(L.cut.text)}</span></div>
+      <ul class="egs">${L.cut.eg.map(([sch, t]) => `<li><span class="school">${sch}</span><span>${esc(t)}</span></li>`).join('')}</ul>
+      ${L.cut.also ? `<p class="also">${esc(L.cut.also)}</p>` : ''}`;
+    nextLabel = S.tab < LOOPS.length - 1 ? STRINGS.nextLoop : STRINGS.quiz + ' ›';
+  } else {
+    const segs = `<div class="segs" aria-hidden="true">${Array.from({length:N + 1}, (_, i) => `<i class="${i < S.step ? 'on' : ''}"></i>`).join('')}</div>`
+      + (S.step ? `<p class="sr">Step ${S.step} of ${N + 1}</p>` : '');
+    if (S.step === 0) body = segs + `<p class="caption">${esc(L.summary)}</p>`;
+    else if (S.step > N) body = segs + `<div class="risk"><b>${STRINGS.risk}</b><strong>${esc(L.risk.name)}</strong><p>${esc(L.risk.text)}</p></div>`;
+    else {
+      const k = L.links[S.step - 1];
+      body = segs + `<p class="caption"><span class="sign ${polCls(k.p)}" aria-label="${k.p === 'o' ? 'minus' : 'plus'}">${sym(k.p)}</span>${esc(k.say)}${k.delay ? '<span class="tag-delay">‖ delay</span>' : ''}</p>`;
+    }
+    nextLabel = S.step === 0 ? STRINGS.start : S.step > N ? STRINGS.breakIt + ' ›' : STRINGS.next;
+    backOff = S.step === 0;
+  }
+  $('panel').innerHTML = `<div class="pane${dir && !reduceMotion() ? ' in-' + dir : ''}" id="pane">${body}</div>` + navHTML(backOff, nextLabel);
+}
+
+function renderTabs(){
+  $('tabs').innerHTML = LOOPS.map((L, i) =>
+    `<button type="button" class="tab" role="tab" id="tab${i}" aria-controls="loopCard" aria-selected="${i === S.tab}" tabindex="${i === S.tab ? 0 : -1}">${esc(L.name)}</button>`).join('');
+  $('track').innerHTML = LOOPS.map((L, i) =>
+    `<div class="slide" role="group" aria-roledescription="slide" aria-label="${esc(L.name)}"><svg class="cld" viewBox="0 0 360 300" role="img"></svg></div>`).join('');
+}
+
+function render(dir){
+  const L = LOOPS[S.tab];
+  const focused = document.activeElement && document.activeElement.closest && document.activeElement.closest('.node');
+  const fid = focused ? focused.dataset.id : null;
+  document.querySelectorAll('.tab').forEach((b, i) => { b.setAttribute('aria-selected', i === S.tab); b.tabIndex = i === S.tab ? 0 : -1; });
+  $('loopCard').setAttribute('aria-labelledby', 'tab' + S.tab);
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === S.mode));
+  document.querySelectorAll('#track .slide').forEach((sl, i) => {
+    sl.setAttribute('aria-hidden', i !== S.tab);
+    drawLoop(LOOPS[i], sl.firstElementChild, i === S.tab ? S : {mode:'step', step:0}, i === S.tab);
+  });
+  $('loopDots').innerHTML = dotsHTML(LOOPS.length, S.tab, false);
+  renderPanel(L, dir);
+  applyPeek();
+  if (fid){ const n = activeSvg().querySelector(`.node[data-id="${fid}"]`); if (n) n.focus({preventScroll:true}); }
+}
+const activeSvg = () => document.querySelectorAll('#track .cld')[S.tab];
+
+/* ===== moves: the buttons, the panel swipe and the ← → keys all call these two ===== */
+function next(){
+  const N = LOOPS[S.tab].links.length; closePeek();
+  if (S.mode === 'break'){ if (S.tab < LOOPS.length - 1){ goLoop(S.tab + 1); revealLoop(); } else goQuiz(); return; }
+  if (S.step > N) S.mode = 'break'; else S.step++;
+  render('r');
+}
+function back(){
+  const N = LOOPS[S.tab].links.length; closePeek();
+  if (S.mode === 'break'){ S.mode = 'step'; S.step = N + 1; render('l'); return; }
+  if (S.step === 0) return settlePane();
+  S.step--; render('l');
+}
+function goQuiz(){ $('quizCard').scrollIntoView({behavior:scrollBehaviour(), block:'start'}); }
+function revealLoop(){ if ($('loopCard').getBoundingClientRect().top < document.querySelector('.topbar').getBoundingClientRect().bottom) $('loopCard').scrollIntoView({behavior:scrollBehaviour(), block:'start'}); }
+
+/* ===== loop carousel: swipe (native scroll-snap) or tap a tab; the settled slide is the loop ===== */
+function goLoop(i, instant){
+  i = Math.max(0, Math.min(LOOPS.length - 1, i));
+  if (i !== S.tab){ S.tab = i; S.step = 0; S.mode = 'step'; closePeek(); render('r'); }
+  const tr = $('track');
+  tr.scrollTo({left:i * tr.clientWidth, behavior:instant ? 'auto' : scrollBehaviour()});
+}
+let settleT = null;
+function onTrackScroll(){
+  const tr = $('track'), i = Math.round(tr.scrollLeft / Math.max(1, tr.clientWidth));
+  $('loopDots').innerHTML = dotsHTML(LOOPS.length, i, false);
+  if (S.peek) closePeek();
+  clearTimeout(settleT);
+  settleT = setTimeout(() => {
+    if (i !== S.tab){ S.tab = i; S.step = 0; S.mode = 'step'; render(); dismissHint(); }
+  }, 90);
+}
+
+/* ===== press and hold a box (or tap it) to light up only its arrows ===== */
+function applyPeek(){
+  const svg = activeSvg(); if (!svg) return;
+  const L = LOOPS[S.tab], n = S.peek && L.byId[S.peek];
+  svg.classList.toggle('peeking', !!n);
+  const nb = new Set();
+  svg.querySelectorAll('.e').forEach(g => {
+    const hot = !!n && (g.dataset.s === n.id || g.dataset.t === n.id);
+    g.classList.toggle('hot', hot);
+    if (hot){ nb.add(g.dataset.s); nb.add(g.dataset.t); }
+  });
+  svg.querySelectorAll('.node').forEach(g => {
+    g.classList.toggle('hot', !!n && g.dataset.id === n.id);
+    g.classList.toggle('nb', !!n && nb.has(g.dataset.id));
+    g.setAttribute('aria-pressed', !!n && g.dataset.id === n.id);
+  });
+  const pk = $('peek');
+  pk.hidden = !n;
+  if (n){
+    $('peekRole').textContent = n.role;
+    $('peekText').textContent = n.means;
+    placePeek(pk, L, [...nb, n.id]);
+  }
+}
+function closePeek(){ if (S.peek){ S.peek = null; applyPeek(); } }
+/* Float the card over the tabs when there is room (never over the diagram or under the finger), else just
+   below the diagram; only when neither fits, inside the diagram on the side that hides fewer lit boxes. */
+function placePeek(pk, L, litIds){
+  pk.classList.remove('above', 'below', 'top');
+  const box = pk.parentElement.getBoundingClientRect(), bar = document.querySelector('.topbar').getBoundingClientRect();
+  if (box.top - bar.bottom >= pk.offsetHeight + 12){ pk.classList.add('above'); return; }
+  if (innerHeight - box.bottom >= pk.offsetHeight + 12){ pk.classList.add('below'); return; }
+  const band = 300 * (pk.offsetHeight + 30) / box.height;            // the card's height in diagram units
+  const hits = edge => litIds.filter(id => { const m = L.byId[id]; return edge === 'top' ? m.y - m._h/2 < band : m.y + m._h/2 > 300 - band; }).length;
+  if (hits('top') < hits('bottom') || (hits('top') === hits('bottom') && L.byId[S.peek].y > 150)) pk.classList.add('top');
+}
+
+let hold = null, swallowClick = 0;
+function wireHold(){
+  const tr = $('track');
+  tr.addEventListener('pointerdown', e => {
+    const g = e.target.closest('.node'); if (!g || e.button > 0) return;
+    hold = {id:g.dataset.id, x:e.clientX, y:e.clientY, fired:false};
+    hold.timer = setTimeout(() => { hold.fired = true; S.peek = hold.id; applyPeek(); dismissHint(); }, HOLD_MS);
+  });
+  tr.addEventListener('pointermove', e => {
+    if (hold && !hold.fired && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 8){ clearTimeout(hold.timer); hold = null; }
+  });
+  const end = () => {
+    if (!hold) return;
+    clearTimeout(hold.timer);
+    if (hold.fired){ closePeek(); swallowClick = Date.now() + 500; }       // release closes the peek
+    hold = null;
+  };
+  tr.addEventListener('pointerup', end);
+  tr.addEventListener('pointercancel', end);
+  tr.addEventListener('touchmove', e => { if (hold && hold.fired) e.preventDefault(); }, {passive:false});  // no carousel drag while peeking
+  tr.addEventListener('contextmenu', e => { if (e.target.closest('.node')) e.preventDefault(); });
+  tr.addEventListener('click', e => {
+    if (Date.now() < swallowClick) return;
+    const g = e.target.closest('.node');
+    if (g){ S.peek = S.peek === g.dataset.id ? null : g.dataset.id; applyPeek(); dismissHint(); }
+    else closePeek();
+  });
+  tr.addEventListener('keydown', e => {
+    const g = e.target.closest('.node'); if (!g || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault(); S.peek = S.peek === g.dataset.id ? null : g.dataset.id; applyPeek();
+  });
+}
+
+/* ===== the panel swipes like the buttons: left = Next, right = Back (vertical drags still scroll the page) ===== */
+function settlePane(){
+  const pane = $('pane'); if (!pane) return;
+  pane.classList.remove('dragging'); pane.classList.add('settle'); pane.style.transform = '';
+}
+function wirePanelSwipe(){
+  const el = $('panel'); let t0 = null;
+  el.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    t0 = {x:e.touches[0].clientX, y:e.touches[0].clientY, dir:null, dx:0};
+  }, {passive:true});
+  el.addEventListener('touchmove', e => {
+    if (!t0) return;
+    const dx = e.touches[0].clientX - t0.x, dy = e.touches[0].clientY - t0.y;
+    if (!t0.dir && Math.hypot(dx, dy) > 10) t0.dir = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    if (t0.dir !== 'x') return;
+    e.preventDefault(); t0.dx = dx;
+    const pane = $('pane');
+    if (pane && !reduceMotion()){ pane.classList.add('dragging'); pane.classList.remove('settle', 'in-l', 'in-r'); pane.style.transform = `translateX(${dx * 0.6}px)`; }
+  }, {passive:false});
+  const end = () => {
+    if (!t0) return;
+    const {dir, dx} = t0; t0 = null;
+    if (dir !== 'x') return;
+    dismissHint();
+    if (dx <= -SWIPE_PX) next(); else if (dx >= SWIPE_PX) back(); else settlePane();
+  };
+  el.addEventListener('touchend', end);
+  el.addEventListener('touchcancel', () => { t0 = null; settlePane(); });
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button[data-go]'); if (!b || b.disabled) return;
+    b.dataset.go === 'next' ? next() : back();
+  });
+}
+
+/* ===== one-time hint ===== */
+let hintT = null;
+function showHint(){
+  if (store.get(HINT_KEY)) return;
+  $('hintText').innerHTML = coarse() ? STRINGS.hintTouch : STRINGS.hintMouse;
+  $('hint').querySelector('svg').style.display = coarse() ? '' : 'none';
+  $('hint').hidden = false;
+  if (coarse() && !reduceMotion()) $('track').classList.add('nudge');      // a small peek at the next loop
+  hintT = setTimeout(dismissHint, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--t-hint')) || 4000);
+}
+function dismissHint(){
+  const h = $('hint'); if (h.hidden) return;
+  clearTimeout(hintT); store.set(HINT_KEY, '1');
+  $('track').classList.remove('nudge');
+  h.classList.add('out'); setTimeout(() => { h.hidden = true; }, 240);
+}
+
+/* ===== quick check: swipeable cards ===== */
+function renderQ(qi){
+  const q = QUIZ[qi], pick = S.quiz[q.id];
+  const opts = LOOPS.map((L, i) => {
+    let cls = '';
+    if (pick != null){ if (i === q.loop) cls = 'right'; else if (i === pick) cls = 'wrong'; }
+    const mark = pick == null ? '' : i === q.loop ? ' ✓' : i === pick ? ' ✕' : '';
+    return `<button type="button" class="${cls}" data-q="${qi}" data-i="${i}" ${pick != null ? 'disabled' : ''}>${esc(L.name)}${mark}</button>`;
+  }).join('');
+  const why = pick == null ? '' : `<p class="q-why"><b>${pick === q.loop ? 'Yes.' : 'It is ' + esc(LOOPS[q.loop].name) + '.'}</b> ${esc(q.why)}</p>`;
+  const nxt = pick != null && qi < QUIZ.length - 1 ? `<div class="q-next"><button type="button" class="btn" data-qnext="${qi + 1}">${STRINGS.next}</button></div>` : '';
+  const card = $('qtrack').children[qi];
+  card.innerHTML = `<p class="q-text"><span class="q-id">${q.id}</span><span>${esc(q.text)}</span></p>
+    <div class="q-opts" role="group" aria-label="Example ${q.id}">${opts}</div>${why}${nxt}`;
+}
+function renderQuizFoot(){
+  const done = QUIZ.filter(q => S.quiz[q.id] != null), right = done.filter(q => S.quiz[q.id] === q.loop).length;
+  $('qDots').innerHTML = dotsHTML(QUIZ.length, S.qi, true);
+  $('qScore').innerHTML = done.length === QUIZ.length
+    ? `<span class="q-score">You got <span class="num">${right} of ${QUIZ.length}</span> right.</span> <button type="button" class="btn" id="quizReset">${STRINGS.again}</button>` : '';
+}
+function goQ(i){
+  i = Math.max(0, Math.min(QUIZ.length - 1, i));
+  const tr = $('qtrack'), card = tr.children[i];
+  tr.scrollTo({left:card.offsetLeft - tr.firstElementChild.offsetLeft, behavior:scrollBehaviour()});
+  S.qi = i; renderQuizFoot();
+}
+function buildQuiz(){
+  $('quizH').textContent = STRINGS.quiz + ': which loop is each example?';
+  $('qtrack').innerHTML = QUIZ.map(q => `<div class="qcard" role="group" aria-roledescription="slide" aria-label="Example ${q.id}"></div>`).join('');
+  QUIZ.forEach((q, i) => renderQ(i));
+  renderQuizFoot();
+  let qT = null;
+  $('qtrack').addEventListener('scroll', () => {
+    clearTimeout(qT);
+    qT = setTimeout(() => {
+      const tr = $('qtrack'), x = tr.scrollLeft, cards = [...tr.children], base = cards[0].offsetLeft;
+      let best = 0; cards.forEach((c, i) => { if (Math.abs(c.offsetLeft - base - x) < Math.abs(cards[best].offsetLeft - base - x)) best = i; });
+      if (best !== S.qi){ S.qi = best; renderQuizFoot(); }
+    }, 80);
+  }, {passive:true});
+  $('qtrack').addEventListener('click', ev => {
+    const nb = ev.target.closest('button[data-qnext]');
+    if (nb){ goQ(+nb.dataset.qnext); return; }
+    const b = ev.target.closest('button[data-q]'); if (!b || b.disabled) return;
+    const qi = +b.dataset.q;
+    S.quiz[QUIZ[qi].id] = +b.dataset.i; renderQ(qi); renderQuizFoot();
+    const f = $('qtrack').children[qi].querySelector('[data-qnext]') || $('quizReset'); if (f) f.focus({preventScroll:true});
+  });
+  $('qtrack').addEventListener('keydown', ev => {
+    if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft'){ ev.preventDefault(); goQ(S.qi + (ev.key === 'ArrowRight' ? 1 : -1)); }
+  });
+  $('quizCard').addEventListener('click', ev => {
+    const d = ev.target.closest('#qDots button'); if (d) goQ(+d.dataset.i);
+    if (ev.target.closest('#quizReset')){ S.quiz = {}; QUIZ.forEach((q, i) => renderQ(i)); goQ(0); }
+  });
+}
+
+/* ===== where is our energy ===== */
+function renderEnergy(){
+  const E = ENERGY[S.side];
+  document.querySelectorAll('.flow button').forEach(b => b.setAttribute('aria-pressed', b.dataset.side === S.side));
+  $('energySub').textContent = E.sub;
+  const ul = $('energyList'); ul.className = 'energy-list ' + S.side;
+  ul.innerHTML = E.items.map(t => `<li>${esc(t)}</li>`).join('');
+}
+document.querySelectorAll('.flow button').forEach(b => b.onclick = () => { S.side = b.dataset.side; renderEnergy(); });
+
+/* ===== wiring ===== */
+$('tabs').addEventListener('click', ev => {
+  const b = ev.target.closest('.tab'); if (!b) return;
+  goLoop([...document.querySelectorAll('.tab')].indexOf(b));
+});
+$('tabs').addEventListener('keydown', ev => {
+  if (ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft') return;
+  ev.preventDefault(); ev.stopPropagation();
+  goLoop((S.tab + (ev.key === 'ArrowRight' ? 1 : LOOPS.length - 1)) % LOOPS.length);
+  document.querySelectorAll('.tab')[S.tab].focus();
+});
+document.querySelectorAll('.seg button').forEach(b => {
+  b.textContent = STRINGS[b.dataset.mode === 'step' ? 'step' : 'breakIt'];
+  b.onclick = () => { closePeek(); S.mode = b.dataset.mode; if (S.mode === 'step') S.step = 0; render(); };
+});
+const closeInfo = () => { $('infoBtn').setAttribute('aria-expanded', false); $('infoPop').hidden = true; };
+$('infoBtn').onclick = () => {
+  const open = $('infoBtn').getAttribute('aria-expanded') !== 'true';
+  $('infoBtn').setAttribute('aria-expanded', open); $('infoPop').hidden = !open;
+};
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape'){ closeInfo(); closePeek(); return; }
+  if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+  const a = document.activeElement;                       // ← → step the loop unless focus is in another control group
+  if (a && a !== document.body && !(a.closest && a.closest('#loopCard'))) return;
+  ev.preventDefault(); ev.key === 'ArrowRight' ? next() : back();
+});
+document.addEventListener('click', ev => {
+  if (!$('infoPop').hidden && !ev.target.closest('#infoPop') && !ev.target.closest('#infoBtn')) closeInfo();
+});
+$('track').addEventListener('scroll', onTrackScroll, {passive:true});
+window.addEventListener('resize', () => { $('track').scrollLeft = S.tab * $('track').clientWidth; });
+
+$('infoTip').textContent = STRINGS.tip;
+$('srcLink').href = SOURCE_URL;
+if (DETAIL_URL){ $('detailLink').href = DETAIL_URL; $('detailLink').hidden = false; }
+$('appName').textContent = APP_DISPLAY_NAME;
+$('appVer').textContent = 'v' + APP_VERSION.split('.').slice(0, 2).join('.');
+
+prepare();
+validate();
+renderTabs(); render(); buildQuiz(); renderEnergy();
+wireHold(); wirePanelSwipe();
+showHint();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Palantir Mini: Attendance Compiler Demo · v0.2</title>
+</head>
+<body>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* DESIGN-TOKEN CONTRACT — every colour, size, radius and duration lives here. Component rules below
+   use var(--…) only, so the dark theme is just a second set of values for the same names.
+   Light values copy the real app (Attendance Compiler v3.4): --primary #1565c0, the six status
+   colours, the calendar threshold tints. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #fafbfc;
+  --surface-3: #f0f2f5;
+  --border: #e3e5ea;
+  --border-soft: #eef0f3;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --text-subtle: #9aa0aa;
+  --primary: #1565c0;
+  --primary-hover: #0d47a1;
+  --primary-bg: #e3f2fd;
+  --on-solid: #ffffff;
+  --focus: #1565c0;
+  --cta-bg: #1565c0;
+  --cta-hover: #0d47a1;
+
+  --st-late: #f57c00;
+  --st-pending: #0277bd;
+  --st-vro: #546e7a;
+  --st-mc: #2e7d32;
+  --st-letter: #6a1b9a;
+  --st-nvr: #c62828;
+  --st-absent: #1565c0;
+
+  --thr-low: #fff8e1;
+  --thr-mid: #ffe0b2;
+  --thr-mid-fg: #c66200;
+  --thr-high: #ffccbc;
+  --thr-high-fg: #b71c1c;
+  --dot-none: #e3e5ea;
+  --dot-low: #ffe082;
+  --dot-mid: #ffa726;
+  --dot-high: #e53935;
+  --holiday-bg: #eceff1;
+  --holiday-fg: #8a4400;
+
+  --tag-lta: #c62828;
+  --tag-pre: #e65100;
+  --tag-mon: #f57c00;
+  --hot: #c66200;
+
+  --brand-a: #1565c0;
+  --brand-b: #6a1b9a;
+  --pill-bg: #eef2ff;
+  --pill-fg: #3949ab;
+  --section-pill-bg: #455a64;
+  --note-bg: #fff8e1;
+  --note-border: #ffd54f;
+  --note-fg: #6d4c00;
+
+  --scrim: rgba(15, 23, 42, .32);
+  --hint-bg: #1f2937;
+  --hint-fg: #ffffff;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+  --shadow: 0 2px 8px rgba(0,0,0,.08);
+  --shadow-lg: 0 10px 30px rgba(15,23,42,.22), 0 2px 6px rgba(15,23,42,.10);
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --gutter: 16px;
+  --app-w: 520px;
+  --tabbar-h: 56px;
+  --dock-h: 57px;
+  --tap: 44px;
+  --dur: 240ms;
+  --dur-fast: 120ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1318;
+    --surface: #171c23;
+    --surface-2: #1c222a;
+    --surface-3: #232a33;
+    --border: #2c333d;
+    --border-soft: #222831;
+    --text: #e6e8eb;
+    --text-muted: #a3aab4;
+    --text-subtle: #737b86;
+    --primary: #6aaaf2;
+    --primary-hover: #93c2f6;
+    --primary-bg: #16283c;
+    --on-solid: #ffffff;
+    --focus: #8cbdf5;
+    --cta-bg: #1e6fd0;
+    --cta-hover: #2a7de0;
+    --st-late: #e07a12;
+    --st-pending: #1f86c4;
+    --st-vro: #66808c;
+    --st-mc: #3b8f40;
+    --st-letter: #8e44ad;
+    --st-nvr: #d23a36;
+    --st-absent: #4f8fd8;
+    --thr-low: #262418;
+    --thr-mid: #43301a;
+    --thr-mid-fg: #ffb74d;
+    --thr-high: #4b221d;
+    --thr-high-fg: #ff8a80;
+    --dot-none: #2c333d;
+    --dot-low: #6b5a22;
+    --dot-mid: #c47a1c;
+    --dot-high: #d9453d;
+    --holiday-bg: #1f252d;
+    --holiday-fg: #e0a060;
+    --tag-lta: #d23a36;
+    --tag-pre: #d9661a;
+    --tag-mon: #c9770f;
+    --hot: #ffb74d;
+    --pill-bg: #252b4d;
+    --pill-fg: #aeb8ff;
+    --section-pill-bg: #3b4750;
+    --note-bg: #2a2414;
+    --note-border: #6b5514;
+    --note-fg: #f0d27e;
+    --scrim: rgba(0, 0, 0, .55);
+    --hint-bg: #e6e8eb;
+    --hint-fg: #111827;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+    --shadow: 0 2px 8px rgba(0,0,0,.45);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1318;
+  --surface: #171c23;
+  --surface-2: #1c222a;
+  --surface-3: #232a33;
+  --border: #2c333d;
+  --border-soft: #222831;
+  --text: #e6e8eb;
+  --text-muted: #a3aab4;
+  --text-subtle: #737b86;
+  --primary: #6aaaf2;
+  --primary-hover: #93c2f6;
+  --primary-bg: #16283c;
+  --on-solid: #ffffff;
+  --focus: #8cbdf5;
+  --cta-bg: #1e6fd0;
+  --cta-hover: #2a7de0;
+  --st-late: #e07a12;
+  --st-pending: #1f86c4;
+  --st-vro: #66808c;
+  --st-mc: #3b8f40;
+  --st-letter: #8e44ad;
+  --st-nvr: #d23a36;
+  --st-absent: #4f8fd8;
+  --thr-low: #262418;
+  --thr-mid: #43301a;
+  --thr-mid-fg: #ffb74d;
+  --thr-high: #4b221d;
+  --thr-high-fg: #ff8a80;
+  --dot-none: #2c333d;
+  --dot-low: #6b5a22;
+  --dot-mid: #c47a1c;
+  --dot-high: #d9453d;
+  --holiday-bg: #1f252d;
+  --holiday-fg: #e0a060;
+  --tag-lta: #d23a36;
+  --tag-pre: #d9661a;
+  --tag-mon: #c9770f;
+  --hot: #ffb74d;
+  --pill-bg: #252b4d;
+  --pill-fg: #aeb8ff;
+  --section-pill-bg: #3b4750;
+  --note-bg: #2a2414;
+  --note-border: #6b5514;
+  --note-fg: #f0d27e;
+  --scrim: rgba(0, 0, 0, .55);
+  --hint-bg: #e6e8eb;
+  --hint-fg: #111827;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow: 0 2px 8px rgba(0,0,0,.45);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.4);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.muted { color: var(--text-muted); }
+
+/* One status → one colour. Every component that paints a status reads var(--st). */
+.b-late { --st: var(--st-late); }
+.b-pending { --st: var(--st-pending); }
+.b-vro { --st: var(--st-vro); }
+.b-mc { --st: var(--st-mc); }
+.b-letter { --st: var(--st-letter); }
+.b-nvr { --st: var(--st-nvr); }
+
+/* ---------- App shell: header · swipeable views · status bar · tab bar ---------- */
+.shell {
+  position: fixed; inset: 0; overflow: hidden;
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto; grid-template-columns: minmax(0, 1fr);
+  background: var(--bg);
+}
+.topbar {
+  grid-row: 1; grid-column: 1; position: relative; z-index: 6;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.topbar-in, .tabbar-in, .dock-in, .app { max-width: var(--app-w); margin: 0 auto; }
+.topbar-in { padding: 9px var(--gutter); }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-icon {
+  flex: 0 0 28px; width: 28px; height: 28px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--brand-a), var(--brand-b));
+  color: var(--on-solid); font-weight: 700; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-text { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 5px; row-gap: 0; min-width: 0; }
+.brand-name { font-weight: 700; font-size: 15px; white-space: nowrap; }
+.brand-sep { color: var(--text-subtle); font-weight: 400; }
+.brand-sub { color: var(--text-muted); font-weight: 500; font-size: 13px; white-space: nowrap; }
+.brand-version {
+  font-size: 10.5px; font-weight: 600; letter-spacing: .3px;
+  background: var(--pill-bg); color: var(--pill-fg);
+  padding: 2px 7px; border-radius: 10px; white-space: nowrap;
+}
+
+.stage { grid-row: 2; grid-column: 1; position: relative; overflow: hidden; min-height: 0; }
+.pager {
+  position: absolute; inset: 0; display: flex;
+  overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
+  overscroll-behavior: contain; scrollbar-width: none;
+}
+.pager::-webkit-scrollbar { display: none; }
+.panel {
+  position: relative; flex: 0 0 100%; min-width: 0; height: 100%;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain;
+  scroll-snap-align: start; scroll-snap-stop: always;
+}
+.app { padding: 12px var(--gutter) 24px; }
+.panel.has-dock .app { padding-bottom: calc(var(--dock-h) + 24px); }
+
+/* Status bar: one control for School, Class and Students, within thumb reach */
+.dock {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  background: var(--surface); border-top: 1px solid var(--border);
+  will-change: transform;
+}
+.dock-in { padding: 6px var(--gutter); }
+
+.tabbar {
+  grid-row: 3; grid-column: 1; position: relative; z-index: 3;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tabbar-in { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tab {
+  min-height: var(--tabbar-h); border: 0; background: none; cursor: pointer; color: var(--text-muted);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: 11.5px; font-weight: 600;
+}
+.tab svg { width: 22px; height: 22px; }
+.tab[aria-current="page"] { color: var(--primary); }
+.tab:hover { color: var(--text); }
+.tab[aria-current="page"]:hover { color: var(--primary); }
+.tab-ind { position: absolute; top: -1px; left: 0; width: 25%; height: 3px; display: flex; justify-content: center; pointer-events: none; will-change: transform; }
+.tab-ind::before { content: ""; width: 36px; height: 3px; border-radius: 0 0 3px 3px; background: var(--primary); }
+
+.demo-note {
+  margin: 0 0 10px;
+  padding: 3px 12px;
+  background: var(--note-bg);
+  border: 1px solid var(--note-border);
+  color: var(--note-fg);
+  border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+  text-align: center;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.section-head { display: flex; align-items: center; gap: 8px; min-height: var(--tap); margin: 8px 0 4px; min-width: 0; }
+.section-pill {
+  background: var(--section-pill-bg); color: var(--on-solid);
+  font-size: 10.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+  padding: 3px 12px; border-radius: 20px; white-space: nowrap;
+}
+.info-btn {
+  margin-left: auto; width: var(--tap); height: var(--tap); border: 0; background: none;
+  color: var(--text-muted); font-size: 18px; border-radius: 50%; cursor: pointer;
+}
+.info-btn[aria-expanded="true"] { color: var(--primary); }
+.info-note {
+  margin: 0 0 10px; padding: 10px 12px; font-size: 13px; color: var(--text-muted);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.info-note p { margin: 0 0 4px; }
+.info-note p:last-child { margin: 0; }
+
+/* ---------- KPI cards (Style C, top accent) ---------- */
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.stat-card {
+  position: relative; display: block; width: 100%; min-width: 0; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); border-top-width: 4px;
+  border-radius: var(--radius); padding: 7px 12px; box-shadow: var(--shadow-sm);
+}
+button.stat-card { cursor: pointer; }
+button.stat-card:hover { border-color: var(--primary); }
+button.stat-card:active { transform: translateY(1px); }
+.stat-card .chev { position: absolute; top: 7px; right: 10px; color: var(--text-subtle); font-size: 16px; line-height: 1; }
+.stat-label { font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); line-height: 1.35; }
+.stat-value { font-size: 22px; font-weight: 700; margin-top: 1px; line-height: 1.2; }
+.stat-unit { font-size: 12.5px; font-weight: 500; color: var(--text-muted); }
+.stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; line-height: 1.35; }
+.stat-card.is-zero { opacity: .58; }
+.s-late { border-top-color: var(--st-late); }
+.s-pending { border-top-color: var(--st-pending); }
+.s-vro { border-top-color: var(--st-vro); }
+.s-mc { border-top-color: var(--st-mc); }
+.s-letter { border-top-color: var(--st-letter); }
+.s-nvr { border-top-color: var(--st-nvr); }
+.s-absent { border-top-color: var(--st-absent); }
+.s-attendance { border-top-color: var(--st-mc); }
+.s-pre { border-top-color: var(--tag-pre); }
+
+/* ---------- Status segmented control (the status bar) ---------- */
+.seg {
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface);
+}
+.seg-btn {
+  min-height: var(--tap); border: 0; border-right: 1px solid var(--border); background: var(--surface);
+  color: var(--text-muted); font-size: 12.5px; font-weight: 500; padding: 0 2px; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.seg-btn:last-child { border-right: 0; }
+.seg-btn:hover { background: var(--surface-3); color: var(--text); }
+.seg-btn[aria-pressed="true"] { color: var(--on-solid); font-weight: 600; background: var(--st); }
+.st-chip {
+  display: inline-block; padding: 2px 9px; border-radius: 20px; background: var(--st); color: var(--on-solid);
+  font-size: 11.5px; font-weight: 700; white-space: nowrap;
+}
+
+/* ---------- Week picker (also the page dots of the week carousel) ---------- */
+.weeks { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
+.wk-btn {
+  min-height: var(--tap); min-width: 0; border: 1px solid var(--border); border-radius: 7px;
+  background: var(--surface); cursor: pointer; padding: 4px 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.wk-btn:hover { border-color: var(--primary); }
+.wk-label { font-size: 12px; font-weight: 600; color: var(--text-muted); line-height: 1; }
+.wk-btn[aria-pressed="true"] { border: 2px solid var(--primary); background: var(--primary-bg); }
+.wk-btn[aria-pressed="true"] .wk-label { color: var(--primary); }
+.dots { display: flex; gap: 1px; }
+.dot { width: 5px; height: 6px; border-radius: 1px; background: var(--dot-none); }
+.dot.thr-low { background: var(--dot-low); }
+.dot.thr-mid { background: var(--dot-mid); }
+.dot.thr-high { background: var(--dot-high); }
+.dot.hol { background: transparent; border: 1px dashed var(--text-subtle); }
+
+/* ---------- School calendar: a carousel of weeks ---------- */
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 4px; min-width: 0; }
+.cal-title { font-weight: 600; font-size: 13.5px; min-width: 0; }
+.cal-title .muted { font-weight: 500; }
+.legend { display: flex; gap: 8px; font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 3px; }
+.legend .l-mid { background: var(--thr-mid); border: 1px solid var(--thr-mid-fg); }
+.legend .l-high { background: var(--thr-high); border: 1px solid var(--thr-high-fg); }
+.days { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.dow { font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); text-align: center; padding-bottom: 2px; }
+.wk-wrap { position: relative; }
+.wk-track {
+  display: flex; gap: 12px; overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.wk-track::-webkit-scrollbar { display: none; }
+.wk-slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; scroll-snap-stop: always; }
+.cal-cell {
+  min-height: 74px; min-width: 0; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); padding: 6px 7px; text-align: left;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+button.cal-cell { cursor: pointer; }
+button.cal-cell:hover { border-color: var(--primary); }
+.cal-date { font-size: 11px; color: var(--text-subtle); white-space: nowrap; }
+.cal-count { font-size: 22px; font-weight: 700; text-align: right; line-height: 1.1; }
+.cal-cell.thr-zero .cal-count { color: var(--text-subtle); font-weight: 500; }
+.cal-cell.thr-low { background: var(--thr-low); }
+.cal-cell.thr-mid { background: var(--thr-mid); }
+.cal-cell.thr-mid .cal-count { color: var(--thr-mid-fg); }
+.cal-cell.thr-high { background: var(--thr-high); }
+.cal-cell.thr-high .cal-count { color: var(--thr-high-fg); }
+.cal-cell.holiday { background: var(--holiday-bg); }
+.cal-hol { font-size: 10px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; color: var(--holiday-fg); line-height: 1.2; }
+.cal-cell[aria-pressed="true"] { border-color: var(--primary); box-shadow: inset 0 0 0 2px var(--primary); }
+
+/* Rows and cells that open a peek on press-and-hold: no callout menu, no text selection */
+[data-day], [data-sid] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.is-held { position: relative; z-index: 8; box-shadow: inset 0 0 0 2px var(--primary); }
+
+/* ---------- Lists of students (shared row shape) ---------- */
+.list { margin-top: 12px; overflow: hidden; }
+.list.flush { margin-top: 0; }
+.list-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding: 12px 14px; border-bottom: 1px solid var(--border); min-width: 0;
+}
+.list-title { font-weight: 600; font-size: 14.5px; min-width: 0; }
+.list-count { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; }
+.grp-head {
+  padding: 6px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border-soft);
+  font-size: 11.5px; font-weight: 700; letter-spacing: .5px; color: var(--text-muted);
+  display: flex; justify-content: space-between;
+}
+.srow {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px;
+  padding: 8px 14px; border: 0; border-bottom: 1px solid var(--border-soft);
+  background: var(--surface); text-align: left; cursor: pointer;
+}
+.srow:last-child { border-bottom: 0; }
+.srow:hover, .srow:active { background: var(--surface-2); }
+.srow-main { flex: 1; min-width: 0; }
+.srow-name { font-weight: 600; font-size: 14.5px; display: block; }
+.srow-sub { font-size: 12px; color: var(--text-muted); display: block; }
+.srow-tags { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.srow-meta { text-align: right; white-space: nowrap; font-size: 13px; color: var(--text-muted); }
+.srow-meta b { display: block; font-size: 16px; color: var(--text); }
+.srow-meta.hot { color: var(--hot); font-weight: 700; }
+.chev-r { color: var(--text-subtle); font-size: 18px; line-height: 1; }
+.empty { padding: 16px 14px; color: var(--text-muted); font-size: 13.5px; }
+.more { padding: 10px 14px; color: var(--text-muted); font-size: 12.5px; border-top: 1px solid var(--border-soft); }
+
+.tag {
+  display: inline-block; padding: 2px 7px; border-radius: 5px; color: var(--on-solid);
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.tag.t-lta, .tag.t-high { background: var(--tag-lta); }
+.tag.t-pre { background: var(--tag-pre); }
+.tag.t-mon { background: var(--tag-mon); }
+
+/* ---------- Search ---------- */
+.search {
+  display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+.search:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-bg); }
+.search svg { flex: 0 0 18px; color: var(--text-subtle); }
+.search input {
+  flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; color: var(--text);
+  font: inherit; font-size: 16px; outline: none;
+}
+.search input::placeholder { color: var(--text-subtle); }
+
+/* ---------- Class ranking ---------- */
+.crow {
+  display: grid; grid-template-columns: 34px minmax(0, 1fr) 40px 14px; align-items: center; gap: 10px;
+  width: 100%; min-height: 56px; padding: 8px 14px; border: 0; border-bottom: 1px solid var(--border-soft);
+  background: var(--surface); text-align: left; cursor: pointer;
+}
+.crow:last-child { border-bottom: 0; }
+.crow:hover, .crow:active { background: var(--surface-2); }
+.crow-cls { font-weight: 700; }
+.crow-mid { display: block; min-width: 0; }
+.bar-track { display: block; height: 10px; border-radius: 5px; background: var(--surface-3); overflow: hidden; }
+.bar { display: block; height: 100%; border-radius: 5px; background: var(--st); }
+.crow-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; display: block; }
+.crow-num { font-weight: 700; font-size: 16px; text-align: right; }
+
+/* ---------- At-risk table (LTA) ---------- */
+.risk-row, .risk-head {
+  display: grid; grid-template-columns: minmax(0, 1fr) 54px 58px 76px; align-items: center; gap: 8px;
+  padding: 8px 14px;
+}
+.risk-head {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted);
+  background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+.risk-row {
+  width: 100%; min-height: 56px; border: 0; border-bottom: 1px solid var(--border-soft);
+  background: var(--surface); text-align: left; cursor: pointer;
+}
+.risk-row:last-child { border-bottom: 0; }
+.risk-row:hover, .risk-row:active { background: var(--surface-2); }
+.num { text-align: right; }
+.num b { display: block; font-size: 16px; }
+.num small { font-size: 11.5px; color: var(--text-muted); }
+.risk-tags { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+
+/* ---------- Student page: slides over the views, swipe right to go back ---------- */
+.shade {
+  grid-row: 2 / 4; grid-column: 1; position: relative; z-index: 4;
+  background: var(--scrim); opacity: 0; pointer-events: none; transition: opacity var(--dur) ease;
+}
+.shade.is-on { opacity: 1; }
+.page {
+  grid-row: 2 / 4; grid-column: 1; position: relative; z-index: 5; min-height: 0;
+  display: flex; flex-direction: column; background: var(--bg);
+  transform: translateX(100%); transition: transform var(--dur) cubic-bezier(.2, .8, .2, 1);
+  box-shadow: var(--shadow-lg);
+}
+.page, .page * { touch-action: pan-y pinch-zoom; }
+.page.is-open { transform: none; }
+.page.is-dragging, .shade.is-dragging { transition: none; }
+.page-bar {
+  display: flex; align-items: center; min-height: 48px; padding: 2px 8px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.page-bar-in { max-width: var(--app-w); width: 100%; margin: 0 auto; }
+.page-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; }
+.page-scroll .app { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+.back {
+  display: inline-flex; align-items: center; gap: 4px; min-height: var(--tap); margin-left: calc(8px - var(--gutter) / 2);
+  padding: 0 10px; border: 0; background: none; color: var(--primary); font-weight: 600; font-size: 15px;
+  cursor: pointer; border-radius: 8px;
+}
+.back:hover { background: var(--primary-bg); }
+.pid { padding: 14px; }
+.pid-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.id-class { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.id-name { font-size: 22px; font-weight: 700; line-height: 1.2; }
+.id-line { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+.counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+.counters .stat-card { padding: 7px 9px; }
+.counters .stat-label { font-size: 10px; letter-spacing: .3px; }
+.counters .stat-value { font-size: 20px; }
+.table-wrap { overflow-x: auto; }
+.pcal { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+.pcal th {
+  font-size: 10.5px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted);
+  background: var(--surface-2); padding: 7px 2px; border-bottom: 2px solid var(--border); text-align: center;
+}
+.pcal th.wk-col { width: 40px; }
+.pcal td {
+  height: 46px; padding: 3px; border-bottom: 1px solid var(--border-soft); border-right: 1px solid var(--border-soft);
+  vertical-align: top;
+}
+.pcal td:last-child { border-right: 0; }
+.pcal tr:last-child td { border-bottom: 0; }
+.pcal td.wk { font-size: 11px; font-weight: 600; color: var(--text-muted); vertical-align: middle; text-align: center; background: var(--surface-2); }
+.pcal td.hol { background: var(--holiday-bg); }
+.pd { font-size: 10px; color: var(--text-subtle); display: block; line-height: 1.2; white-space: nowrap; }
+.pbadge {
+  display: block; margin-top: 3px; padding: 2px 0; border-radius: 4px; text-align: center; background: var(--st);
+  color: var(--on-solid); font-size: 10px; font-weight: 700; letter-spacing: .2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.phol { display: block; margin-top: 3px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; color: var(--holiday-fg); }
+
+/* ---------- Peek (press and hold) ---------- */
+.peek-scrim {
+  position: absolute; inset: 0; z-index: 7; background: var(--scrim);
+  opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) ease;
+}
+.peek {
+  position: absolute; z-index: 9; left: 16px; top: 0; width: min(340px, calc(100vw - 32px));
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg); padding: 12px 14px 14px;
+  opacity: 0; transform: scale(.94); transform-origin: 50% 100%;
+  transition: opacity var(--dur-fast) ease, transform var(--dur-fast) ease; pointer-events: none;
+}
+.peek.below { transform-origin: 50% 0; }
+.peek-scrim.is-on, .peek.is-on { opacity: 1; }
+.peek.is-on { transform: none; }
+.peek-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.peek-title { font-weight: 700; font-size: 15px; }
+.peek-rows { margin-top: 8px; display: grid; gap: 6px; }
+.peek-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) 28px; align-items: center; gap: 8px; }
+.peek .counters { margin-top: 8px; gap: 6px; }
+.tgrid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px; margin-top: 10px; }
+.tg-col { display: grid; gap: 3px; }
+.tg { display: block; height: 9px; border-radius: 2px; background: var(--surface-3); }
+.tg[class*="b-"] { background: var(--st); }
+.tg.hol { background: transparent; border: 1px dashed var(--text-subtle); }
+.tg-axis { display: flex; justify-content: space-between; margin-top: 3px; font-size: 10.5px; color: var(--text-subtle); }
+
+/* ---------- One-time gesture hint ---------- */
+.hint {
+  position: absolute; left: 50%; top: 50%; z-index: 1; transform: translate(-50%, -50%);
+  display: flex; align-items: center; gap: 8px; max-width: calc(100% - 8px);
+  padding: 8px 14px; border-radius: 999px; background: var(--hint-bg); color: var(--hint-fg);
+  font-size: 12.5px; font-weight: 600; white-space: nowrap; box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none; transition: opacity 300ms ease;
+}
+.hint.is-on { opacity: .95; }
+.hint svg { flex: 0 0 20px; width: 20px; height: 20px; }
+.hint .nudge { animation: nudge 1.1s ease-in-out infinite; }
+.hint .pulse { animation: pulse 1.1s ease-in-out infinite; transform-origin: 50% 50%; }
+@keyframes nudge { 0%, 100% { transform: translateX(-4px); } 50% { transform: translateX(4px); } }
+@keyframes pulse { 0%, 100% { transform: scale(.8); opacity: .7; } 50% { transform: scale(1.1); opacity: 1; } }
+
+/* ---------- Footer ---------- */
+.getapp { margin-top: 24px; padding: 16px; text-align: center; }
+.getapp p { margin: 0 0 12px; font-size: 13px; color: var(--text-muted); }
+.cta {
+  display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: var(--radius);
+  background: var(--cta-bg); color: var(--on-solid); font-weight: 700; font-size: 15px; text-decoration: none;
+}
+.cta:hover { background: var(--cta-hover); }
+.cta-2 { display: inline-flex; align-items: center; min-height: var(--tap); margin-top: 4px; color: var(--primary); font-size: 13px; font-weight: 600; text-decoration: none; }
+.cta-2:hover { text-decoration: underline; }
+
+@media (min-width: 480px) {
+  .weeks { gap: 6px; }
+  .dots { gap: 2px; }
+  .dot { width: 6px; height: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+</style>
+
+<div class="shell" id="shell">
+  <header class="topbar"><div class="topbar-in"><div class="brand">
+    <span class="brand-icon" aria-hidden="true">P</span>
+    <span class="brand-text">
+      <span class="brand-name">Palantir Mini<span class="brand-sep">:</span></span>
+      <span class="brand-sub">Attendance Compiler Demo</span>
+      <span class="brand-version" id="ver-pill">v0.2</span>
+    </span>
+  </div></div></header>
+
+  <div class="stage" id="stage">
+    <main class="pager" id="pager">
+      <section class="panel has-dock" id="p-school" aria-label="School"></section>
+      <section class="panel has-dock" id="p-class" aria-label="Class"></section>
+      <section class="panel has-dock" id="p-students" aria-label="Students"></section>
+      <section class="panel" id="p-lta" aria-label="LTA"></section>
+    </main>
+    <div class="dock" id="dock"><div class="dock-in" id="dock-in"></div></div>
+  </div>
+
+  <nav class="tabbar" id="tabbar" aria-label="Views"><div class="tabbar-in">
+    <span class="tab-ind" id="tab-ind" aria-hidden="true"></span>
+    <button class="tab" data-tab="school" type="button" aria-controls="p-school">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h2M14 14h2M8 17.5h2"/></svg>
+      <span>School</span></button>
+    <button class="tab" data-tab="class" type="button" aria-controls="p-class">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
+      <span>Class</span></button>
+    <button class="tab" data-tab="students" type="button" aria-controls="p-students">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="8" r="4"/><path d="M3 20c.8-3.6 3.6-5.5 7-5.5 1.6 0 3 .4 4.2 1.2"/><circle cx="17.5" cy="17.5" r="2.5"/><path d="m19.5 19.5 1.8 1.8"/></svg>
+      <span>Students</span></button>
+    <button class="tab" data-tab="lta" type="button" aria-controls="p-lta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 10v4.5M12 17.2v.3"/></svg>
+      <span>LTA</span></button>
+  </div></nav>
+
+  <div class="shade" id="shade"></div>
+  <section class="page" id="page" role="dialog" aria-modal="true" aria-labelledby="pid-name" hidden>
+    <div class="page-bar"><div class="page-bar-in">
+      <button type="button" class="back" id="back-btn"><span aria-hidden="true">‹</span> Back</button>
+    </div></div>
+    <div class="page-scroll" id="page-scroll"><div class="app" id="page-body"></div></div>
+  </section>
+
+  <div class="peek-scrim" id="peek-scrim"></div>
+  <div class="peek" id="peek" aria-hidden="true"></div>
+</div>
+
+<script>
+"use strict";
+const APP_VERSION = "0.2.0";
+const APP_DISPLAY_NAME = "Palantir Mini: Attendance Compiler Demo";
+
+// Same status vocabulary and order as the real app (STATUS_ORDER in Attendance Compiler v3.4).
+const STATUS_ORDER = ["Late", "Pending", "VRO", "MC", "Letter", "NVR"];
+// Statuses that count as absent (Attendance %, Monitor). Late and VRO are not absences.
+const ABSENT_STATUSES = ["Pending", "MC", "Letter", "NVR"];
+// Calendar tints for a whole school of ~280 students: [orange from, red from] per status.
+const THR = { Late: [6, 10], Pending: [1, 3], VRO: [5, 10], MC: [6, 9], Letter: [2, 4], NVR: [3, 5] };
+const TERM = "Term 3";
+// The four views, in swipe order. The status bar drives the first three.
+const TABS = ["school", "class", "students", "lta"];
+const STATUS_TABS = ["school", "class", "students"];
+const HOLD_MS = 450;           // press and hold → peek
+const HINT_MS = 4000;          // one-time gesture hint stays this long
+
+// Phrases used by more than one renderer.
+const STRINGS = {
+  students: n => n === 1 ? "1 student" : `${n} students`,
+  thisTerm: st => `${st} this term`,
+  dayTitle: (st, d) => `${st} on ${d.long}`,
+  absent: "Absent",
+  chev: "›",
+  hintSwipe: "Swipe the days to change the week",
+  hintHold: "Press and hold a day for a count by class"
+};
+
+const slug = st => st.toLowerCase();
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DOWS = ["Mon","Tue","Wed","Thu","Fri"];
+const ord = n => { const v = n % 100; const s = (v >= 11 && v <= 13) ? "th" : ({ 1: "st", 2: "nd", 3: "rd" }[n % 10] || "th"); return n + s; };
+const pct = (a, b) => Math.round(100 * a / b);
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const $ = id => document.getElementById(id);
+const mq = q => { try { return matchMedia(q).matches; } catch (e) { return false; } };
+const reduceMotion = () => mq("(prefers-reduced-motion: reduce)");
+const touchFirst = () => mq("(hover: none) and (pointer: coarse)");
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode: the hint just shows again */ } }
+};
+
+/* ============================================================
+   Made-up data, generated from a fixed seed (same on every load).
+   8 classes, ~35 students each, Term 3 2026 (29 Jun – 4 Sep).
+   ============================================================ */
+function buildData() {
+  let seed = 20260629;
+  const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const pick = arr => arr[Math.floor(rnd() * arr.length)];
+
+  const CLASSES = ["1A","1B","1C","1D","2A","2B","2C","2D"];
+  const SIZES   = [36, 35, 37, 34, 35, 36, 34, 35];
+  const WORST = "2C";
+  const HOLIDAYS = { "2026-08-10": "National Day" };
+
+  const days = [];
+  const d0 = new Date(Date.UTC(2026, 5, 29));
+  for (let i = 0; i < 70; i++) {
+    const d = new Date(d0.getTime() + i * 864e5);
+    const dow = d.getUTCDay();
+    if (dow === 0 || dow === 6) continue;
+    const iso = d.toISOString().slice(0, 10);
+    if (iso > "2026-09-04") break;
+    days.push({ iso, dow: dow - 1, week: Math.floor(i / 7) + 1, holiday: HOLIDAYS[iso] || null, day: d.getUTCDate(), mon: d.getUTCMonth() });
+  }
+  const schoolDays = days.filter(d => !d.holiday);
+
+  const students = [];
+  let n = 0;
+  CLASSES.forEach((c, ci) => {
+    for (let k = 0; k < SIZES[ci]; k++) {
+      n++;
+      const r = rnd();
+      let lateP = r < 0.72 ? 0.003 : r < 0.93 ? 0.018 : r < 0.985 ? 0.06 : 0.18;
+      if (c[0] === "2") lateP *= 1.1;
+      if (c === WORST) lateP *= 3;
+      students.push({ i: students.length, name: "Student " + String(n).padStart(3, "0"), cls: c, lateP, rec: {} });
+    }
+  });
+  // A few repeat late-comers in the worst class
+  students.filter(s => s.cls === WORST).slice(3, 7).forEach(s => { s.lateP = 0.24; });
+
+  // Students with many NVR days: [class, NVR days]
+  const NVR_PLAN = [["2C", 14], ["1D", 11], ["2C", 8], ["2A", 6], ["1B", 5]];
+  const used = new Set();
+  const plan = new Map();
+  NVR_PLAN.forEach(([c, k]) => {
+    const pool = students.filter(s => s.cls === c && !used.has(s.i) && s.lateP < 0.1);
+    const s = pool[Math.floor(rnd() * pool.length)];
+    used.add(s.i);
+    plan.set(s.i, k);
+  });
+  // One student with a long MC
+  const monPool = students.filter(s => s.cls === "1A" && !used.has(s.i));
+  const monStu = monPool[Math.floor(rnd() * monPool.length)];
+  used.add(monStu.i);
+
+  const set = (s, iso, st) => { if (!s.rec[iso]) s.rec[iso] = st; };
+
+  plan.forEach((k, idx) => {
+    const s = students[idx];
+    const pool = schoolDays.filter(d => d.week < 10);
+    let got = 0, guard = 0;
+    while (got < k && guard++ < 500) {
+      const start = Math.floor(rnd() * pool.length);
+      const len = 1 + Math.floor(rnd() * 3);
+      for (let j = 0; j < len && got < k; j++) {
+        const d = pool[start + j];
+        if (d && !s.rec[d.iso]) { s.rec[d.iso] = "NVR"; got++; }
+      }
+    }
+  });
+  {
+    const startIdx = schoolDays.findIndex(d => d.iso === "2026-07-29");
+    for (let j = 0; j < 9; j++) monStu.rec[schoolDays[startIdx + j].iso] = "MC";
+    const need = { Letter: 4, NVR: 3 };
+    for (const st of ["Letter", "NVR"]) {
+      let g = 0;
+      while (need[st] > 0 && g++ < 200) {
+        const d = pick(schoolDays.filter(x => x.week < 10));
+        if (!monStu.rec[d.iso]) { monStu.rec[d.iso] = st; need[st]--; }
+      }
+    }
+  }
+
+  // School events with official leave (VRO)
+  const VRO_EVENTS = [[["2026-07-08"], 12], [["2026-07-22", "2026-07-23"], 9], [["2026-08-19"], 15], [["2026-08-27", "2026-08-28"], 7]];
+  VRO_EVENTS.forEach(([isos, k]) => {
+    const group = new Set();
+    while (group.size < k) group.add(Math.floor(rnd() * students.length));
+    group.forEach(idx => { if (!used.has(idx)) isos.forEach(iso => set(students[idx], iso, "VRO")); });
+  });
+
+  // Day by day: MC runs, Letters, odd NVR days, late-coming (worse on Mondays and wet days)
+  const RAIN = { "2026-07-15": 1.8, "2026-08-26": 1.7, "2026-08-31": 1.5 };
+  schoolDays.forEach((d, di) => {
+    const flu = (d.week === 6 || d.week === 7) ? 1.7 : 1;
+    const dowF = [1.6, 1.0, 0.95, 1.0, 0.85][d.dow];
+    const wkF = d.week === 1 ? 0.75 : d.week >= 8 ? 1.15 : 1;
+    students.forEach(s => {
+      if (s.rec[d.iso]) return;
+      if (s === monStu) { if (rnd() < s.lateP * dowF) s.rec[d.iso] = "Late"; return; }
+      if (rnd() < 0.011 * flu) {
+        const len = rnd() < 0.55 ? 1 : rnd() < 0.65 ? 2 : 3;
+        for (let j = 0; j < len; j++) { const dd = schoolDays[di + j]; if (dd && !s.rec[dd.iso]) s.rec[dd.iso] = "MC"; }
+        return;
+      }
+      const r = rnd();
+      if (r < 0.004) { s.rec[d.iso] = "Letter"; return; }
+      if (!plan.has(s.i) && r < 0.004 + 0.0022) { s.rec[d.iso] = "NVR"; return; }
+      if (r > 0.9993) { s.rec[d.iso] = "VRO"; return; }
+      if (rnd() < s.lateP * dowF * wkF * (RAIN[d.iso] || 1)) s.rec[d.iso] = "Late";
+    });
+  });
+
+  // The last few days: some absences have no reason entered yet (Pending)
+  const PEND = { "2026-09-02": 0.3, "2026-09-03": 0.5, "2026-09-04": 0.7 };
+  students.forEach(s => {
+    if (plan.has(s.i) || s === monStu) return;
+    for (const iso in PEND) {
+      const st = s.rec[iso];
+      if ((st === "MC" || st === "Letter" || st === "NVR") && rnd() < PEND[iso]) s.rec[iso] = "Pending";
+    }
+  });
+  ["2026-09-02", "2026-09-03", "2026-09-04"].forEach(iso => {
+    for (let k = 0; k < 2; k++) { const s = pick(students); if (!s.rec[iso] && !plan.has(s.i)) s.rec[iso] = "Pending"; }
+  });
+
+  return { CLASSES, SIZES, days, students };
+}
+
+/* ============================================================
+   Derived figures — computed once
+   ============================================================ */
+const DATA = buildData();
+const CLASSES = DATA.CLASSES;
+const STU = DATA.students;
+const DAYS = DATA.days.map(d => Object.assign(d, {
+  short: `${d.day} ${MONTHS[d.mon]}`,
+  long: `${DOWS[d.dow]} ${d.day} ${MONTHS[d.mon]}`
+}));
+const SCHOOL_DAYS = DAYS.filter(d => !d.holiday);
+const N_DAYS = SCHOOL_DAYS.length;
+const N_WEEKS = Math.max(...DAYS.map(d => d.week));
+const LTA_MIN = Math.ceil(N_DAYS / 5);      // 20% of school days
+const PRE_MIN = Math.ceil(N_DAYS / 10);     // 10%
+const MON_MIN = Math.ceil(N_DAYS * 0.3);    // Monitor: absent ≥ 30%
+const HIGH_MIN = Math.ceil(N_DAYS * 0.5);   // High Risk: absent ≥ 50%
+
+const BY_DAY = {};
+STU.forEach(s => { s.count = {}; STATUS_ORDER.forEach(st => s.count[st] = 0); s.run = {}; });
+SCHOOL_DAYS.forEach(d => {
+  const m = {}; STATUS_ORDER.forEach(st => m[st] = []);
+  STU.forEach(s => {
+    const st = s.rec[d.iso];
+    if (!st) return;
+    s.count[st]++;
+    s.run[d.iso] = s.count[st];
+    m[st].push(s.i);
+  });
+  BY_DAY[d.iso] = m;
+});
+STU.forEach(s => {
+  s.absent = ABSENT_STATUSES.reduce((a, st) => a + s.count[st], 0);
+  s.lta = s.count.NVR >= LTA_MIN ? "LTA" : s.count.NVR >= PRE_MIN ? "pre-LTA" : null;
+  s.abs = s.absent >= HIGH_MIN ? "High Risk" : s.absent >= MON_MIN ? "Monitor" : null;
+});
+const ATT_PCT = (100 * (1 - STU.reduce((a, s) => a + s.absent, 0) / (STU.length * N_DAYS))).toFixed(1);
+const PENDING_STU = STU.filter(s => s.count.Pending > 0);
+const FIRST_PENDING = SCHOOL_DAYS.find(d => BY_DAY[d.iso].Pending.length > 0);
+
+const dayCount = (iso, st) => BY_DAY[iso] ? BY_DAY[iso][st].length : 0;
+const thrClass = (n, st) => n === 0 ? "thr-zero" : n >= THR[st][1] ? "thr-high" : n >= THR[st][0] ? "thr-mid" : "thr-low";
+const weekDays = w => DAYS.filter(d => d.week === w);
+function busiestDay(w, st) {
+  let best = null, max = 0;
+  weekDays(w).forEach(d => { if (!d.holiday) { const n = dayCount(d.iso, st); if (n > max) { max = n; best = d.iso; } } });
+  return best;
+}
+
+const dayOf = iso => DAYS.find(d => d.iso === iso);
+
+/* ============================================================
+   State — one object drives the whole UI
+   ============================================================ */
+const S = { tab: "school", status: "Late", week: N_WEEKS, day: null, q: "", sid: null };
+S.day = busiestDay(S.week, S.status);
+
+/* ============================================================
+   Shared renderers
+   ============================================================ */
+function demoNote() { return `<div class="demo-note">Demo with made-up data · ${TERM}, 2026</div>`; }
+function getApp() {
+  return `<footer class="card getapp">
+    <p>The full app reads your own School Cockpit RE_SDT_032 report and adds a whole-year calendar, a class heatmap and filters. It runs on your own laptop, and nothing is uploaded.</p>
+    <a class="cta" href="https://dataiskoo.notion.site/375781292b9481428a0fd16fd01f0b04" target="_blank" rel="noopener">Get the full app</a>
+    <a class="cta-2" href="https://dataiskoo.notion.site/376781292b948184a0a9d539fc080575" target="_blank" rel="noopener">Excel version</a>
+  </footer>`;
+}
+function sectionHead(title, extra = "", id = "") {
+  return `<div class="section-head"${id ? ` id="${id}"` : ""}><span class="section-pill">${title}</span>${extra}</div>`;
+}
+function infoBtn(key, label) {
+  return `<button type="button" class="info-btn" data-info="${key}" aria-expanded="false" aria-controls="note-${key}" aria-label="${label}">ⓘ</button>`;
+}
+function infoNote(key, lines) {
+  return `<div class="info-note" id="note-${key}" hidden>${lines.map(l => `<p>${l}</p>`).join("")}</div>`;
+}
+function statusSeg() {
+  return `<div class="seg" role="group" aria-label="Status">${STATUS_ORDER.map(st =>
+    `<button type="button" class="seg-btn b-${slug(st)}" data-status="${st}" aria-pressed="${st === S.status}">${st}</button>`
+  ).join("")}</div>`;
+}
+function tagChips(s) {
+  const out = [];
+  if (s.lta) out.push(`<span class="tag ${s.lta === "LTA" ? "t-lta" : "t-pre"}">${s.lta}</span>`);
+  if (s.abs) out.push(`<span class="tag ${s.abs === "Monitor" ? "t-mon" : "t-high"}">${s.abs}</span>`);
+  return out.join("");
+}
+// One row shape for every list of students. `meta` is the right-hand figure.
+function studentRow(s, { meta = "", hot = false, showClass = true } = {}) {
+  return `<button type="button" class="srow" data-sid="${s.i}">
+    <span class="srow-main"><span class="srow-name">${s.name}</span>${showClass ? `<span class="srow-sub">${s.cls}</span>` : ""}</span>
+    ${s.lta || s.abs ? `<span class="srow-tags">${tagChips(s)}</span>` : ""}
+    ${meta ? `<span class="srow-meta${hot ? " hot" : ""}">${meta}</span>` : ""}
+    <span class="chev-r" aria-hidden="true">${STRINGS.chev}</span>
+  </button>`;
+}
+function statCard({ label, value, unit = "", sub = "", kind, action = "", zero = false }) {
+  const tag = action ? "button" : "div";
+  return `<${tag} ${action ? `type="button" data-action="${action}"` : ""} class="stat-card ${kind}${zero ? " is-zero" : ""}">
+    ${action ? `<span class="chev" aria-hidden="true">${STRINGS.chev}</span>` : ""}
+    <div class="stat-label">${label}</div>
+    <div class="stat-value">${value}${unit ? ` <span class="stat-unit">${unit}</span>` : ""}</div>
+    ${sub ? `<div class="stat-sub">${sub}</div>` : ""}
+  </${tag}>`;
+}
+// A student's term counts: used by the student page and the student peek.
+function counters(s) {
+  return STATUS_ORDER.map(st => statCard({ label: st, value: s.count[st], kind: "s-" + slug(st), zero: s.count[st] === 0 })).join("")
+    + statCard({ label: STRINGS.absent, value: s.absent, kind: "s-absent" });
+}
+// The term in one picture: a column per week, a square per school day.
+function termGrid(s) {
+  const cols = Array.from({ length: N_WEEKS }, (_, k) => `<span class="tg-col">${weekDays(k + 1).map(d => {
+    const st = s.rec[d.iso];
+    return `<i class="tg${d.holiday ? " hol" : st ? " b-" + slug(st) : ""}"></i>`;
+  }).join("")}</span>`).join("");
+  return `<div class="tgrid" aria-hidden="true">${cols}</div><div class="tg-axis" aria-hidden="true"><span>W1</span><span>W${N_WEEKS}</span></div>`;
+}
+
+/* ============================================================
+   School view: KPIs, then a calendar you swipe week by week
+   ============================================================ */
+let track = null;
+function buildSchool() {
+  $("p-school").innerHTML = `<div class="app">${demoNote()}
+    <div class="kpis" id="kpis"></div>
+    ${sectionHead("School calendar", `<span class="st-chip" id="st-chip"></span>${infoBtn("cal", "How to use the calendar")}`, "cal-anchor")}
+    ${infoNote("cal", [STRINGS.hintSwipe + ".", STRINGS.hintHold + ".", "Press and hold a student for a summary of their term."])}
+    <div id="cal-zone">
+      <div class="weeks" id="weeks" role="group" aria-label="Week"></div>
+      <div class="cal-head" id="cal-head"></div>
+      <div class="days" aria-hidden="true">${DOWS.map(x => `<div class="dow">${x}</div>`).join("")}</div>
+      <div class="wk-wrap"><div class="wk-track" id="wk-track"></div><div class="hint" id="hint" aria-hidden="true"></div></div>
+    </div>
+    <div id="drill"></div>
+    ${getApp()}
+  </div>`;
+  track = $("wk-track");
+}
+function paintKpis() {
+  const ltaN = STU.filter(s => s.lta === "LTA").length;
+  const preN = STU.filter(s => s.lta === "pre-LTA").length;
+  $("kpis").innerHTML = [
+    statCard({ label: "Attendance %", value: ATT_PCT + "%", sub: `${N_DAYS} school days`, kind: "s-attendance" }),
+    statCard({ label: "LTA", value: ltaN, unit: "students", sub: `NVR ≥ ${LTA_MIN} days`, kind: "s-nvr", action: "lta" }),
+    statCard({ label: "pre-LTA", value: preN, unit: "students", sub: `NVR ≥ ${PRE_MIN} days`, kind: "s-pre", action: "lta" }),
+    statCard({ label: "Pending", value: PENDING_STU.length, unit: "students", sub: FIRST_PENDING ? `Since ${FIRST_PENDING.long}` : "", kind: "s-pending", action: "pending" })
+  ].join("");
+}
+function paintChip() { const c = $("st-chip"); c.className = `st-chip b-${slug(S.status)}`; c.textContent = S.status; }
+function paintWeeks() {
+  const st = S.status;
+  $("weeks").innerHTML = Array.from({ length: N_WEEKS }, (_, k) => {
+    const w = k + 1;
+    const dots = weekDays(w).map(d => d.holiday ? `<i class="dot hol"></i>` : `<i class="dot ${thrClass(dayCount(d.iso, st), st)}"></i>`).join("");
+    return `<button type="button" class="wk-btn" data-week="${w}" aria-pressed="${w === S.week}" aria-label="T3W${w}">
+      <span class="wk-label">W${w}</span><span class="dots" aria-hidden="true">${dots}</span></button>`;
+  }).join("");
+}
+function syncWeeks() {
+  document.querySelectorAll("#weeks .wk-btn").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.week === S.week)));
+}
+function paintCalHead() {
+  const st = S.status, wk = weekDays(S.week), first = wk[0], last = wk[wk.length - 1], [lo, hi] = THR[st];
+  $("cal-head").innerHTML = `<span class="cal-title">T3W${S.week} <span class="muted">· ${first.short} – ${last.short}</span></span>
+    <span class="legend" aria-label="Orange from ${lo}, red from ${hi}"><span><i class="l-mid"></i>${lo}+</span><span><i class="l-high"></i>${hi}+</span></span>`;
+}
+function cellHTML(d) {
+  const st = S.status;
+  if (d.holiday) return `<div class="cal-cell holiday"><span class="cal-date">${d.short}</span><span class="cal-hol">${d.holiday}</span></div>`;
+  const n = dayCount(d.iso, st);
+  const cls = thrClass(n, st);
+  const inner = `<span class="cal-date">${d.short}</span><span class="cal-count">${n}</span>`;
+  if (!n) return `<div class="cal-cell ${cls}">${inner}</div>`;
+  return `<button type="button" class="cal-cell ${cls}" data-day="${d.iso}" aria-pressed="false" aria-label="${d.long}, ${n} ${st}">${inner}</button>`;
+}
+// All ten weeks sit side by side in a snap carousel; only the status rebuilds it.
+function buildTrack() {
+  track.innerHTML = Array.from({ length: N_WEEKS }, (_, k) =>
+    `<div class="wk-slide days" data-slide="${k + 1}" role="group" aria-label="T3W${k + 1}">${weekDays(k + 1).map(cellHTML).join("")}</div>`
+  ).join("");
+  syncDays();
+  scrollTrackTo(S.week, false);
+}
+// The week on screen is the only one in the tab order; the chosen day is outlined.
+function syncDays() {
+  track.querySelectorAll(".wk-slide").forEach(sl => {
+    const cur = +sl.dataset.slide === S.week;
+    if (cur) sl.removeAttribute("aria-hidden"); else sl.setAttribute("aria-hidden", "true");
+    sl.querySelectorAll("[data-day]").forEach(b => {
+      b.tabIndex = cur ? 0 : -1;
+      b.setAttribute("aria-pressed", String(b.dataset.day === S.day));
+    });
+  });
+}
+function paintDrill() {
+  const st = S.status, host = $("drill");
+  if (!S.day) { host.innerHTML = `<div class="card list"><div class="empty">No ${st} records in T3W${S.week}.</div></div>`; return; }
+  const d = dayOf(S.day);
+  const ids = BY_DAY[S.day][st];
+  const groups = CLASSES.map(c => ({ c, list: ids.map(i => STU[i]).filter(s => s.cls === c) })).filter(g => g.list.length);
+  const body = groups.map(g => `<div class="grp-head"><span>${g.c}</span><span>${g.list.length}</span></div>` +
+    g.list.map(s => { const r = s.run[S.day]; return studentRow(s, { meta: `${ord(r)} this term`, hot: r >= 3, showClass: false }); }).join("")
+  ).join("");
+  host.innerHTML = `<div class="card list">
+    <div class="list-head"><span class="list-title">${STRINGS.dayTitle(st, d)}</span><span class="list-count">${STRINGS.students(ids.length)}</span></div>
+    ${body}</div>`;
+}
+
+/* ============================================================
+   Class, Students, LTA views
+   ============================================================ */
+function renderClass() {
+  const st = S.status;
+  const rows = CLASSES.map(c => {
+    const list = STU.filter(s => s.cls === c);
+    return { c, total: list.reduce((a, s) => a + s.count[st], 0), uniq: list.filter(s => s.count[st] > 0).length, size: list.length };
+  }).sort((a, b) => b.total - a.total || a.c.localeCompare(b.c));
+  const max = Math.max(1, ...rows.map(r => r.total));
+  $("p-class").innerHTML = `<div class="app">${demoNote()}
+    ${sectionHead("Classes")}
+    <div class="card list flush b-${slug(st)}">
+      <div class="list-head"><span class="list-title">${STRINGS.thisTerm(st)}, by class</span></div>
+      ${rows.map(r => `<button type="button" class="crow" data-class="${r.c}" aria-label="${r.c}: ${r.total} ${st}, ${r.uniq} of ${r.size} students">
+        <span class="crow-cls">${r.c}</span>
+        <span class="crow-mid"><span class="bar-track"><span class="bar" style="width:${(100 * r.total / max).toFixed(1)}%"></span></span>
+          <span class="crow-sub">${r.uniq} of ${r.size} students</span></span>
+        <span class="crow-num">${r.total}</span>
+        <span class="chev-r" aria-hidden="true">${STRINGS.chev}</span>
+      </button>`).join("")}
+    </div>
+    ${getApp()}
+  </div>`;
+}
+
+function buildStudents() {
+  $("p-students").innerHTML = `<div class="app">${demoNote()}
+    ${sectionHead("Find a student")}
+    <label class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" spellcheck="false"
+             placeholder="Student number or class, e.g. 42 or 2C" aria-label="Find a student by number or class" aria-controls="results">
+    </label>
+    <div id="results" class="card list" aria-live="polite"></div>
+    ${getApp()}
+  </div>`;
+}
+function searchStudents(q) {
+  const t = q.trim().toLowerCase().replace(/^student\s*/, "");
+  if (!t) return null;
+  const st = S.status;
+  const cls = CLASSES.find(c => c.toLowerCase() === t);
+  if (cls) return { label: cls, list: STU.filter(s => s.cls === cls).sort((a, b) => b.count[st] - a.count[st] || a.i - b.i) };
+  const list = STU.filter(s => s.name.toLowerCase().slice(8).includes(t) || s.cls.toLowerCase().startsWith(t));
+  return { label: null, list };
+}
+function renderResults() {
+  const st = S.status;
+  const res = searchStudents(S.q);
+  const meta = s => `<b>${s.count[st]}</b>${st}`;
+  const host = $("results");
+  if (!res) {
+    const top = STU.slice().sort((a, b) => b.count[st] - a.count[st] || a.i - b.i).slice(0, 8);
+    host.innerHTML = `<div class="list-head"><span class="list-title">Most ${STRINGS.thisTerm(st)}</span></div>${top.map(s => studentRow(s, { meta: meta(s) })).join("")}`;
+    return;
+  }
+  if (!res.list.length) {
+    host.innerHTML = `<div class="empty">No student or class matches “${esc(S.q.trim())}”.</div>`;
+    return;
+  }
+  const LIMIT = res.label ? 40 : 8;
+  const shown = res.list.slice(0, LIMIT);
+  const head = res.label ? `<div class="list-head"><span class="list-title">${res.label}</span><span class="list-count">${STRINGS.students(res.list.length)}</span></div>` : "";
+  const more = res.list.length > LIMIT ? `<div class="more">${res.list.length - LIMIT} more. Type more of the number.</div>` : "";
+  host.innerHTML = head + shown.map(s => studentRow(s, { meta: meta(s) })).join("") + more;
+}
+
+function renderLTA() {
+  const rank = s => s.lta === "LTA" ? 0 : s.lta === "pre-LTA" ? 1 : 2;
+  const list = STU.filter(s => s.lta || s.abs).sort((a, b) => rank(a) - rank(b) || b.count.NVR - a.count.NVR || b.absent - a.absent);
+  $("p-lta").innerHTML = `<div class="app">${demoNote()}
+    ${sectionHead("At-risk students", infoBtn("lta", "How students are flagged"))}
+    ${infoNote("lta", [
+      `<b>LTA</b>: NVR on ${LTA_MIN} or more of the ${N_DAYS} school days (20%). <b>pre-LTA</b>: ${PRE_MIN} or more (10%).`,
+      `<b>Monitor</b>: absent on ${MON_MIN} or more school days (30%), not counting VRO.`
+    ])}
+    <div class="card list flush">
+      <div class="risk-head"><span>Student</span><span class="num">NVR</span><span class="num">${STRINGS.absent}</span><span></span></div>
+      ${list.map(s => `<button type="button" class="risk-row" data-sid="${s.i}">
+        <span class="srow-main"><span class="srow-name">${s.name}</span><span class="srow-sub">${s.cls}</span></span>
+        <span class="num"><b>${s.count.NVR}</b><small>${pct(s.count.NVR, N_DAYS)}%</small></span>
+        <span class="num"><b>${s.absent}</b><small>${pct(s.absent, N_DAYS)}%</small></span>
+        <span class="risk-tags">${tagChips(s)}</span>
+      </button>`).join("")}
+    </div>
+    ${getApp()}
+  </div>`;
+}
+
+function renderProfile() {
+  const s = STU[S.sid];
+  const lines = [];
+  if (s.lta) lines.push(`NVR on ${s.count.NVR} of ${N_DAYS} school days (${pct(s.count.NVR, N_DAYS)}%).`);
+  if (s.abs) lines.push(`Absent on ${s.absent} of ${N_DAYS} school days (${pct(s.absent, N_DAYS)}%).`);
+  const rows = Array.from({ length: N_WEEKS }, (_, k) => {
+    const w = k + 1;
+    const tds = weekDays(w).map(d => {
+      if (d.holiday) return `<td class="hol"><span class="pd">${d.short}</span><span class="phol">Holiday</span></td>`;
+      const st = s.rec[d.iso];
+      return `<td><span class="pd">${d.short}</span>${st ? `<span class="pbadge b-${slug(st)}">${st}</span>` : ""}</td>`;
+    }).join("");
+    return `<tr><td class="wk">W${w}</td>${tds}</tr>`;
+  }).join("");
+  $("page-body").innerHTML = `
+    <div class="card pid">
+      <div class="id-class">${s.cls}</div>
+      <div class="pid-top"><span class="id-name" id="pid-name">${s.name}</span>${tagChips(s)}</div>
+      ${lines.length ? `<div class="id-line">${lines.join(" ")}</div>` : ""}
+    </div>
+    <div class="counters">${counters(s)}</div>
+    ${sectionHead(`${TERM} calendar`)}
+    <div class="card table-wrap"><table class="pcal">
+      <thead><tr><th class="wk-col">Wk</th>${DOWS.map(x => `<th>${x}</th>`).join("")}</tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    ${getApp()}`;
+}
+
+/* ============================================================
+   Status bar
+   ============================================================ */
+const dock = $("dock");
+function syncDock() {
+  dock.querySelectorAll(".seg-btn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.status === S.status)));
+}
+function paintByStatus() {
+  syncDock(); paintChip(); paintWeeks(); paintCalHead(); buildTrack(); paintDrill(); renderClass(); renderResults();
+}
+function setStatus(st) {
+  if (st === S.status) return;
+  S.status = st;
+  if (!S.day || dayCount(S.day, st) === 0 || dayOf(S.day).week !== S.week) S.day = busiestDay(S.week, st);
+  paintByStatus();
+}
+
+/* ============================================================
+   Week carousel (swipe, week buttons, ← →)
+   ============================================================ */
+let weekLock = null, trackIdle = 0;
+const slideW = () => track.clientWidth + (parseFloat(getComputedStyle(track).columnGap) || 0);
+const slideAt = () => clamp(Math.round(track.scrollLeft / slideW()), 0, N_WEEKS - 1) + 1;
+function scrollTrackTo(w, smooth) {
+  const left = (w - 1) * slideW();
+  if (Math.abs(track.scrollLeft - left) < 1) return;
+  weekLock = w;
+  track.scrollTo({ left, behavior: smooth && !reduceMotion() ? "smooth" : "auto" });
+  armTrackIdle();
+}
+function armTrackIdle() { clearTimeout(trackIdle); trackIdle = setTimeout(trackSettled, 160); }
+function trackSettled() {
+  weekLock = null;
+  const w = slideAt();
+  if (w !== S.week) setWeek(w, { from: "swipe" });
+}
+function onTrackScroll() {
+  armTrackIdle();
+  const w = slideAt();
+  if (weekLock !== null) {
+    if (w === weekLock && Math.abs(track.scrollLeft - (w - 1) * slideW()) < 1) weekLock = null;
+    return;
+  }
+  if (w !== S.week) setWeek(w, { from: "swipe" });
+}
+function setWeek(w, { from = "tap", smooth = true } = {}) {
+  w = clamp(w, 1, N_WEEKS);
+  if (w !== S.week) {
+    S.week = w;
+    S.day = busiestDay(w, S.status);
+    syncWeeks(); paintCalHead(); syncDays(); paintDrill();
+    if (from === "swipe") hintDone("swipe");
+  }
+  if (from !== "swipe") scrollTrackTo(w, smooth);
+}
+function pickDay(iso) {
+  S.day = iso;
+  syncDays(); paintDrill();
+  reveal($("drill"), $("p-school"));
+}
+// Scroll a view just enough to show the top of `el` above the status bar.
+function reveal(el, panel, need = 220) {
+  const pr = panel.getBoundingClientRect(), r = el.getBoundingClientRect();
+  const bottom = pr.bottom - (panel.classList.contains("has-dock") ? dock.offsetHeight : 0);
+  const by = r.top + Math.min(r.height, need) - bottom + 8;
+  if (by > 0) panel.scrollBy({ top: by, behavior: reduceMotion() ? "auto" : "smooth" });
+}
+
+/* ============================================================
+   Views pager (swipe, tab bar, ← →)
+   ============================================================ */
+const pager = $("pager");
+const panels = TABS.map(t => $("p-" + t));
+const DOCK_VIS = TABS.map(t => STATUS_TABS.includes(t) ? 1 : 0);
+let tabLock = null, pagerIdle = 0;
+const pageW = () => pager.clientWidth || 1;
+const pagerAt = () => clamp(Math.round(pager.scrollLeft / pageW()), 0, TABS.length - 1);
+// The tab underline and the status bar follow the finger, not just the final tab.
+function paintPagerProgress() {
+  const prog = clamp(pager.scrollLeft / pageW(), 0, TABS.length - 1);
+  $("tab-ind").style.transform = `translateX(${(prog * 100).toFixed(2)}%)`;
+  const i0 = Math.floor(prog), f = prog - i0;
+  const vis = DOCK_VIS[i0] * (1 - f) + DOCK_VIS[Math.min(i0 + 1, TABS.length - 1)] * f;
+  dock.style.transform = vis < 1 ? `translateY(${((1 - vis) * 100).toFixed(2)}%)` : "";
+}
+function onPagerScroll() {
+  paintPagerProgress();
+  const idx = pagerAt();
+  const atSnap = Math.abs(pager.scrollLeft - idx * pageW()) < 1;
+  if (tabLock !== null) { if (idx === tabLock && atSnap) tabLock = null; }
+  else if (TABS[idx] !== S.tab) setTab(TABS[idx]);
+  clearTimeout(pagerIdle);
+  if (atSnap && tabLock === null) pagerSettled(); else pagerIdle = setTimeout(pagerSettled, 160);
+}
+function pagerSettled() {
+  clearTimeout(pagerIdle);
+  tabLock = null;
+  const idx = pagerAt();
+  if (TABS[idx] !== S.tab) setTab(TABS[idx]);
+  applyInert();
+}
+function setTab(tab) {
+  S.tab = tab;
+  document.querySelectorAll(".tab").forEach(b => {
+    if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+  const docked = STATUS_TABS.includes(tab);
+  dock.inert = !docked;
+  if (docked) dock.removeAttribute("aria-hidden"); else dock.setAttribute("aria-hidden", "true");
+}
+// Only the view on screen takes focus and clicks; the others wait off to the side.
+function applyInert() { panels.forEach((p, i) => { p.inert = TABS[i] !== S.tab; }); }
+function goTab(tab, { smooth = true } = {}) {
+  const idx = TABS.indexOf(tab);
+  setTab(tab); applyInert();
+  const left = idx * pageW();
+  if (Math.abs(pager.scrollLeft - left) < 1) { tabLock = null; paintPagerProgress(); return; }
+  tabLock = idx;
+  pager.scrollTo({ left, behavior: smooth && !reduceMotion() ? "smooth" : "auto" });
+  clearTimeout(pagerIdle); pagerIdle = setTimeout(pagerSettled, 900);
+}
+function openClass(c) {
+  S.q = c; $("q").value = c; renderResults();
+  $("p-students").scrollTop = 0;
+  goTab("students");
+}
+function showPending() {
+  S.status = "Pending";
+  if (FIRST_PENDING) S.week = FIRST_PENDING.week;
+  S.day = busiestDay(S.week, S.status);
+  paintByStatus();
+  const panel = $("p-school");
+  panel.scrollBy({ top: $("cal-anchor").getBoundingClientRect().top - panel.getBoundingClientRect().top - 4, behavior: reduceMotion() ? "auto" : "smooth" });
+}
+function toggleInfo(btn) {
+  const open = btn.getAttribute("aria-expanded") !== "true";
+  btn.setAttribute("aria-expanded", String(open));
+  $("note-" + btn.dataset.info).hidden = !open;
+}
+
+/* ============================================================
+   Student page: slides in over the views; Back, Esc, ← or a swipe to the right closes it
+   ============================================================ */
+const page = $("page"), shade = $("shade"), stage = $("stage"), tabbar = $("tabbar");
+let returnFocus = null, pageTimer = 0;
+const pageOpen = () => page.classList.contains("is-open");
+function openStudent(i, opener) {
+  cancelHold();
+  S.sid = i;
+  renderProfile();
+  clearTimeout(pageTimer);
+  page.hidden = false;
+  $("page-scroll").scrollTop = 0;
+  void page.offsetWidth;                       // start the slide from off-screen
+  page.classList.add("is-open"); shade.classList.add("is-on");
+  stage.inert = true; tabbar.inert = true;
+  returnFocus = opener || null;
+  $("back-btn").focus({ preventScroll: true });
+  pushHistory();
+}
+function closeStudent({ fromHistory = false } = {}) {
+  if (!pageOpen()) return;
+  page.classList.remove("is-open", "is-dragging"); shade.classList.remove("is-on", "is-dragging");
+  page.style.transform = ""; shade.style.opacity = "";
+  stage.inert = false; tabbar.inert = false;
+  clearTimeout(pageTimer);
+  pageTimer = setTimeout(() => { page.hidden = true; }, reduceMotion() ? 0 : 300);
+  if (returnFocus && document.contains(returnFocus)) returnFocus.focus({ preventScroll: true });
+  returnFocus = null; S.sid = null;
+  if (!fromHistory) popHistory();
+}
+// The phone's own Back (Android button, iOS edge swipe) closes the student page too.
+let histPushed = false, ignorePop = false, popTimer = 0;
+function pushHistory() {
+  if (histPushed || ignorePop) return;
+  try { history.pushState({ acStudent: true }, ""); histPushed = true; } catch (e) { histPushed = false; }
+}
+function popHistory() {
+  if (!histPushed) return;
+  histPushed = false; ignorePop = true;
+  clearTimeout(popTimer); popTimer = setTimeout(() => { ignorePop = false; }, 800);
+  try { history.back(); } catch (e) { ignorePop = false; }
+}
+addEventListener("popstate", () => {
+  if (ignorePop) { ignorePop = false; return; }
+  if (histPushed) { histPushed = false; closeStudent({ fromHistory: true }); }
+});
+let sw = null;
+page.addEventListener("pointerdown", e => {
+  if (e.pointerType === "mouse" || !pageOpen()) return;
+  sw = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, lock: null, t: performance.now() };
+});
+page.addEventListener("pointermove", e => {
+  if (!sw || e.pointerId !== sw.id) return;
+  const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+  if (!sw.lock) {
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    sw.lock = dx > 0 && Math.abs(dx) > Math.abs(dy) * 1.2 ? "x" : "y";
+    if (sw.lock === "x") {
+      page.classList.add("is-dragging"); shade.classList.add("is-dragging");
+      try { page.setPointerCapture(e.pointerId); } catch (_) { /* not needed for the drag */ }
+    }
+  }
+  if (sw.lock !== "x") return;
+  sw.dx = Math.max(0, dx);
+  page.style.transform = `translateX(${sw.dx}px)`;
+  shade.style.opacity = String(Math.max(0, 1 - sw.dx / page.clientWidth));
+});
+function endSwipe(e) {
+  if (!sw || (e && e.pointerId !== sw.id)) return;
+  const s = sw; sw = null;
+  if (s.lock !== "x") return;
+  const fast = s.dx / Math.max(1, performance.now() - s.t) > 0.5;
+  page.classList.remove("is-dragging"); shade.classList.remove("is-dragging");
+  if (s.dx > page.clientWidth * 0.3 || (fast && s.dx > 40)) closeStudent();
+  else { page.style.transform = ""; shade.style.opacity = ""; }
+}
+page.addEventListener("pointerup", endSwipe);
+page.addEventListener("pointercancel", endSwipe);
+
+/* ============================================================
+   Press and hold → peek (a day by class, or a student's term). Release closes it.
+   Tap still does what it always did; the peek only saves a trip.
+   ============================================================ */
+const peekEl = $("peek"), peekScrim = $("peek-scrim");
+const HOLD_SEL = "[data-day], [data-sid]";
+let hold = null, peekOpen = false, swallowOn = null, swallowTimer = 0;
+function dayPeek(iso) {
+  const st = S.status, d = dayOf(iso), ids = BY_DAY[iso][st];
+  const rows = CLASSES.map(c => ({ c, n: ids.filter(i => STU[i].cls === c).length }))
+    .filter(r => r.n).sort((a, b) => b.n - a.n || a.c.localeCompare(b.c));
+  const max = Math.max(1, ...rows.map(r => r.n));
+  return `<div class="peek-head"><span class="peek-title">${STRINGS.dayTitle(st, d)}</span><span class="list-count">${STRINGS.students(ids.length)}</span></div>
+    <div class="peek-rows b-${slug(st)}">${rows.map(r => `<div class="peek-row"><span class="crow-cls">${r.c}</span>
+      <span class="bar-track"><span class="bar" style="width:${(100 * r.n / max).toFixed(1)}%"></span></span><span class="crow-num">${r.n}</span></div>`).join("")}</div>`;
+}
+function studentPeek(s) {
+  return `<div class="peek-head"><span class="peek-title">${s.name} <span class="muted">· ${s.cls}</span></span><span class="srow-tags">${tagChips(s)}</span></div>
+    <div class="counters">${counters(s)}</div>
+    ${termGrid(s)}`;
+}
+function placePeek(el) {
+  const r = el.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
+  const w = peekEl.offsetWidth, h = peekEl.offsetHeight, gap = 10, pad = 8;
+  let top = r.top - h - gap, below = false;
+  if (top < pad) { top = r.bottom + gap; below = true; }
+  if (top + h > vh - pad) { top = Math.max(pad, (vh - h) / 2); below = false; }
+  peekEl.style.left = clamp(r.left + r.width / 2 - w / 2, 12, vw - w - 12) + "px";
+  peekEl.style.top = top + "px";
+  peekEl.classList.toggle("below", below);
+}
+function openPeek(el) {
+  if (!hold || hold.el !== el || !document.contains(el)) return;
+  peekOpen = true;
+  peekEl.innerHTML = el.dataset.day ? dayPeek(el.dataset.day) : studentPeek(STU[+el.dataset.sid]);
+  el.classList.add("is-held");
+  placePeek(el);
+  peekScrim.classList.add("is-on"); peekEl.classList.add("is-on");
+  hintDone("hold");
+}
+function closePeek() {
+  peekOpen = false;
+  peekScrim.classList.remove("is-on"); peekEl.classList.remove("is-on");
+}
+function cancelHold() {
+  if (hold) { clearTimeout(hold.timer); hold.el.classList.remove("is-held"); }
+  hold = null;
+  if (peekOpen) closePeek();
+}
+pager.addEventListener("pointerdown", e => {
+  if (e.button !== 0 || !e.isPrimary) return;
+  const el = e.target.closest(HOLD_SEL);
+  if (!el) return;
+  cancelHold();
+  hold = { el, id: e.pointerId, x: e.clientX, y: e.clientY, timer: setTimeout(() => openPeek(el), HOLD_MS) };
+});
+addEventListener("pointermove", e => {
+  if (!hold || peekOpen || e.pointerId !== hold.id) return;
+  if (Math.abs(e.clientX - hold.x) > 10 || Math.abs(e.clientY - hold.y) > 10) cancelHold();
+}, { passive: true });
+function endHold(e) {
+  if (!hold || e.pointerId !== hold.id) return;
+  const wasOpen = peekOpen, el = hold.el;
+  cancelHold();
+  if (wasOpen) {
+    swallowOn = el;
+    clearTimeout(swallowTimer); swallowTimer = setTimeout(() => { swallowOn = null; }, 400);
+  }
+}
+addEventListener("pointerup", endHold);
+addEventListener("pointercancel", endHold);
+// While a peek is open the finger may wander: keep the page still under it.
+pager.addEventListener("touchmove", e => { if (peekOpen && e.cancelable) e.preventDefault(); }, { passive: false });
+pager.addEventListener("contextmenu", e => { if (e.target.closest(HOLD_SEL)) e.preventDefault(); });
+// The release after a peek is not a tap: swallow the one click it may fire on the held element.
+document.addEventListener("click", e => {
+  if (!swallowOn || !swallowOn.contains(e.target)) return;
+  swallowOn = null;
+  e.preventDefault(); e.stopPropagation();
+}, true);
+
+/* ============================================================
+   One-time gesture hints (touch screens only; remembered on this phone)
+   ============================================================ */
+const HINTS = [
+  { key: "swipe", text: STRINGS.hintSwipe,
+    icon: `<svg class="nudge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8l-4 4 4 4M17 8l4 4-4 4M3 12h18"/></svg>` },
+  { key: "hold", text: STRINGS.hintHold,
+    icon: `<svg class="pulse" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="currentColor"/><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55"/></svg>` }
+];
+const hintSeen = new Set();
+const HINT_KEY = k => "ac-demo.hint." + k;
+let hintNow = null, hintTimer = 0;
+const seen = k => hintSeen.has(k) || store.get(HINT_KEY(k)) === "1";
+function showNextHint() {
+  if (!touchFirst() || S.tab !== "school" || pageOpen()) return;
+  const h = HINTS.find(x => !seen(x.key));
+  if (!h) return;
+  const el = $("hint");
+  el.innerHTML = `${h.icon}<span>${h.text}</span>`;
+  hintNow = h.key;
+  el.classList.add("is-on");
+  clearTimeout(hintTimer); hintTimer = setTimeout(() => hintDone(h.key), HINT_MS);
+}
+function hintDone(key) {
+  hintSeen.add(key); store.set(HINT_KEY(key), "1");
+  if (hintNow !== key) return;
+  hintNow = null; clearTimeout(hintTimer);
+  $("hint").classList.remove("is-on");
+  setTimeout(showNextHint, 900);
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+document.addEventListener("click", e => {
+  const t = e.target.closest("button, a");
+  if (!t) return;
+  if (t.dataset.tab) return goTab(t.dataset.tab);
+  if (t.dataset.status) return setStatus(t.dataset.status);
+  if (t.dataset.week) return setWeek(+t.dataset.week);
+  if (t.dataset.day) return pickDay(t.dataset.day);
+  if (t.dataset.sid) return openStudent(+t.dataset.sid, t);
+  if (t.dataset.class) return openClass(t.dataset.class);
+  if (t.dataset.info) return toggleInfo(t);
+  if (t.id === "back-btn") return closeStudent();
+  const a = t.dataset.action;
+  if (a === "lta") return goTab("lta");
+  if (a === "pending") return showPending();
+});
+// Keyboard: ← → move the week when the calendar has focus, otherwise the view; ← or Esc leaves a student.
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    if (peekOpen) return cancelHold();
+    if (pageOpen()) return closeStudent();
+    return;
+  }
+  if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  const a = document.activeElement;
+  if (a && (a.matches("input, textarea, select") || a.isContentEditable)) return;
+  const dir = e.key === "ArrowRight" ? 1 : -1;
+  if (pageOpen()) { if (dir < 0) { e.preventDefault(); closeStudent(); } return; }
+  if (a && a.closest("#cal-zone")) {
+    e.preventDefault();
+    setWeek(S.week + dir);
+    const b = document.querySelector(`#weeks [data-week="${S.week}"]`);
+    if (b) b.focus({ preventScroll: true });
+    return;
+  }
+  const i = clamp(TABS.indexOf(S.tab) + dir, 0, TABS.length - 1);
+  if (TABS[i] !== S.tab) { e.preventDefault(); goTab(TABS[i]); }
+});
+let resizeRaf = 0;
+addEventListener("resize", () => {
+  cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => {
+    if (hold) cancelHold();
+    tabLock = TABS.indexOf(S.tab); pager.scrollLeft = tabLock * pageW();
+    weekLock = S.week; track.scrollLeft = (S.week - 1) * slideW();
+    paintPagerProgress(); armTrackIdle();
+    clearTimeout(pagerIdle); pagerIdle = setTimeout(pagerSettled, 160);
+  });
+});
+
+$("ver-pill").textContent = "v" + APP_VERSION.split(".").slice(0, 2).join(".");
+$("dock-in").innerHTML = statusSeg();
+buildSchool();
+paintKpis();
+buildStudents();
+renderLTA();
+track.addEventListener("scroll", onTrackScroll, { passive: true });
+pager.addEventListener("scroll", onPagerScroll, { passive: true });
+const qInput = $("q");
+qInput.addEventListener("input", () => { S.q = qInput.value; renderResults(); });
+qInput.addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const res = searchStudents(S.q);
+  if (!res || !res.list.length) return;
+  const t = S.q.trim().replace(/\D/g, "").padStart(3, "0");
+  const exact = res.list.find(s => s.name.endsWith(" " + t));
+  const hit = res.list.length === 1 ? res.list[0] : exact;
+  if (hit) { e.preventDefault(); qInput.blur(); openStudent(hit.i, qInput); }
+});
+paintByStatus();
+setTab(S.tab);
+applyInert();
+paintPagerProgress();
+setTimeout(showNextHint, 900);
+</script>
+
+</body>
+</html>
