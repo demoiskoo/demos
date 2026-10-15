@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Palantir: Offence Dashboard Demo · v0.3</title>
+<title>Palantir Mini: Student Offence Dashboard Demo · v0.4</title>
 </head>
 <body>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-/* Palantir: Offence Dashboard Demo v0.3 (13 Oct 2026; v0.3 = the footer links to its own Gallery page) - a phone-sized trial of Palantir: Offence Dashboard v0.6.9 for
+/* Palantir Mini: Student Offence Dashboard Demo v0.4 (15 Oct 2026; v0.4 = Koo's name for the app, as on its Gallery page; v0.3 = the footer links to its own Gallery page) - a phone-sized trial of Palantir: Offence Dashboard v0.6.9 for
    the NLC Group D poster. Made-up data from a fixed seed; nothing is fetched or sent.
    v0.2 = v0.1's design, data, words and logic, made to feel like a phone app: swipe the headline numbers to change the
    year, the panel is a bottom sheet (drag down to close, swipe right to go back), and a long press on a row peeks.
@@ -286,11 +286,11 @@ table.t tr.pin th,table.t tr.pin td{font-weight:700;border-top:2px solid var(--b
 </style>
 
 <div id="app">
-<header class="topbar"><div class="wrap"><div class="brand" title="Palantir: Offence Dashboard Demo · v0.3">
+<header class="topbar"><div class="wrap"><div class="brand" title="Palantir Mini: Student Offence Dashboard Demo · v0.4">
   <span class="brand-icon" aria-hidden="true">P</span>
-  <span class="brand-name">Palantir<span class="brand-sep">:</span></span>
-  <span class="brand-sub">Offence Dashboard Demo</span>
-  <span class="brand-version" id="ver">v0.3</span>
+  <span class="brand-name">Palantir Mini<span class="brand-sep">:</span></span>
+  <span class="brand-sub">Student Offence Dashboard Demo</span>
+  <span class="brand-version" id="ver">v0.4</span>
 </div></div></header>
 <main class="wrap" id="main"></main>
 <footer class="wrap foot"><div class="card">
@@ -306,8 +306,8 @@ table.t tr.pin th,table.t tr.pin td{font-weight:700;border-top:2px solid var(--b
 <script>
 (function () {
 'use strict';
-const APP_VERSION = '0.3.0';
-const APP_DISPLAY_NAME = 'Palantir: Offence Dashboard Demo';
+const APP_VERSION = '0.4.0';
+const APP_DISPLAY_NAME = 'Palantir Mini: Student Offence Dashboard Demo';
 const SEED = 20261013;                   // a fixed seed: the same made-up school on every load
 const YEARS = [2022, 2023, 2024, 2025, 2026];
 const FIRST = YEARS[0], LAST = YEARS[YEARS.length - 1];
